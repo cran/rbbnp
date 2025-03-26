@@ -131,41 +131,50 @@ get_est_Ar <- function(Y = 1, X, xi_interval, r_stepsize = 150) {
   ln_xi_ub <- log(xi_interval$xi_ub)
   ln_xi_range <- seq(ln_xi_lb, ln_xi_ub, length.out = (ln_xi_ub - ln_xi_lb) * 200)
 
+  # Precompute get_avg_phi_log values for all ln_xi
+  avg_phi_log_values <- vapply(ln_xi_range, function(x) get_avg_phi_log(X = X, ln_xi = x), numeric(1))
+
   # define the range of r
   r_range <- tan(seq(-pi / 2, pi / 2, length.out = r_stepsize))
   r_range <- r_range[-c(1, length(r_range))]
 
-  # Define the Optimize lnA for a given ln_xi
-  optim_ln_A <- function(r, ln_xi_range) {
+  # Initial ln_A value (using the first precomputed value)
+  ln_A_init <- avg_phi_log_values[1]
+
+  # Define the Optimize lnA for a given ln_xi with precomputed values
+  optim_ln_A <- function(r) {
     # Define the objective function to minimize (integral)
-    objective_function <- function(ln_A, r, ln_xi_range) {
+    objective_function <- function(ln_A) {
       ln_xi_lb <- ln_xi_range[1]
       ln_xi_n <- ln_xi_range[length(ln_xi_range)]
       # the integration can be viewed as the area of a rectangular
       (ln_xi_n - ln_xi_lb) * (ln_A - r * (ln_xi_n + ln_xi_lb) / 2) # length*height
     }
 
-    # contains function should be positive
-    contraint_fun <- function(X, ln_xi, ln_A, r) {
-      ln_A - r * ln_xi - get_avg_phi_log(Y = Y, X = X, ln_xi = ln_xi)
-    }
+    # Compute constraint values using precomputed phi_log values
+    ln_phi_c <- ln_A_init - r * ln_xi_range - avg_phi_log_values
 
-    # initial ln_A as the ln_xi_lb
-    ln_A <- get_avg_phi_log(Y = Y, X = X, ln_xi = ln_xi_range[1])
-
-    ln_phi_c <- purrr::map_dbl(ln_xi_range, contraint_fun, X = X, ln_A = ln_A, r = r)
     diff_ln_phi <- min(ln_phi_c)
 
     # get the optimal ln_A
-    ln_A <- ln_A - diff_ln_phi
+    ln_A <- ln_A_init - diff_ln_phi
 
-    obj <- objective_function(ln_A, r, ln_xi_range)
+    obj <- objective_function(ln_A)
 
     return(c(ln_A = ln_A, obj = obj))
   }
 
-  # evaluate the obj for each r
-  res <- purrr::map_dfr(r_range, ~ optim_ln_A(.x, ln_xi_range))
+  # Create a results matrix
+  res <- matrix(0, nrow = length(r_range), ncol = 2)
+  colnames(res) <- c("ln_A", "obj")
+
+  # Evaluate for each r value
+  for (i in seq_along(r_range)) {
+    res[i,] <- optim_ln_A(r_range[i])
+  }
+
+  # Convert to data frame
+  res <- as.data.frame(res)
 
   # find the optimal value of A and r
   est_id <- which.min(res$obj)
@@ -270,7 +279,8 @@ kernel_reg <- function(X, Y, x, h, kernel_func) {
 #' @param h A bandwidth parameter used in the kernel function for smoothing.
 #' @param kernel_func A kernel function used to weigh observations in the neighborhood of point x.
 #'
-#' @return Returns a scalar representing the estimated conditional variance of Y given X at the point x.
+#' @return Returns a non-negative scalar representing the estimated conditional variance of Y given X at the point x.
+#'         Returns 0 if the computed variance is negative.
 #'
 get_conditional_var <- function(X, Y, x, h, kernel_func) {
   # get the conditional mean of Y on X
@@ -283,8 +293,9 @@ get_conditional_var <- function(X, Y, x, h, kernel_func) {
 
   # Compute conditional variance
   conditional_var <- kernel_reg(X, residuals^2, x = x, h, kernel_func = kernel_func)
-
-  return(conditional_var)
+  
+  # Return 0 if variance is negative, otherwise return the computed variance
+  return(max(0, conditional_var))
 }
 
 #' Estimation of sigma
@@ -295,13 +306,21 @@ get_conditional_var <- function(X, Y, x, h, kernel_func) {
 #' @param x A scalar representing the point where the density is estimated.
 #' @param h A scalar bandwidth parameter.
 #' @param inf_k Kernel function used for the computation.
-#' @return A scalar representing the sigma estimate at point x.
+#' @return A scalar representing the sigma estimate at point x. Returns 0 if the density estimate is negative.
 get_sigma <- function(X, x, h, inf_k) {
   n <- length(X)
-  z <- get_avg_f1x(X, x, h, inf_k = inf_k) / (n * h) * pracma::integral(function(x) {
+  f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
+  
+  # Return 0 if density estimate is negative or 0
+  if (f1x <= 0) {
+    return(0)
+  }
+  
+  z <- f1x / (n * h) * pracma::integral(function(x) {
     inf_k(x)^2
   }, -999, +1000)
-  sqrt(z)
+  
+  return(sqrt(z))
 }
 
 #' Estimation of sigma_yx
@@ -312,16 +331,23 @@ get_sigma <- function(X, x, h, inf_k) {
 #' @param h A bandwidth parameter used in the kernel function for smoothing.
 #' @param inf_k A kernel function used to weigh observations in the neighborhood of point x.
 #'
-#' @return Returns a scalar representing the estimated value of sigma_yx at the point x.
-#'
+#' @return Returns a scalar representing the estimated value of sigma_yx at the point x. 
+#'         Returns 0 if either fyx or conditional variance is negative.
 get_sigma_yx <- function(Y, X, x, h, inf_k) {
   n <- length(X)
   var_yx <- get_conditional_var(Y = Y, X = X, x = x, h = h, kernel_func = inf_k)
-  z <- var_yx * get_avg_fyx(Y = Y, X = X, x = x, h = h, inf_k = inf_k) / (n * h) *
-    pracma::integral(function(x) {
-      inf_k(x)^2
-    }, -999, +1000)
-  sqrt(z)
+  fyx <- get_avg_fyx(Y = Y, X = X, x = x, h = h, inf_k = inf_k)
+  
+  # Return 0 if either fyx is negative or var_yx is 0 (indicating it was negative)
+  if (fyx <= 0 || var_yx <= 0) {
+    return(0)
+  }
+  
+  z <- var_yx * fyx / (n * h) * pracma::integral(function(x) {
+    inf_k(x)^2
+  }, -999, +1000)
+  
+  return(sqrt(z))
 }
 
 #' Approximation Function for Intensive Calculations

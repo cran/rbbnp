@@ -21,7 +21,7 @@ A ggplot object representing the plot of the Fourier transform.
 Plot the Fourier Transform of the
 }
 \details{
-C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in Schennach (2020) \doi{10.1093/restud/rdz065}.
+C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in in Schennach (2020).
 }
 \examples{
 plot_ft(

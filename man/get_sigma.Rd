@@ -16,7 +16,7 @@ get_sigma(X, x, h, inf_k)
 \item{inf_k}{Kernel function used for the computation.}
 }
 \value{
-A scalar representing the sigma estimate at point x.
+A scalar representing the sigma estimate at point x. Returns 0 if the density estimate is negative.
 }
 \description{
 Computes the sigma estimate for given parameters.

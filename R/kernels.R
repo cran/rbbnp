@@ -3,7 +3,9 @@
 #'
 #' @return The value of the sinc function at each point in `u`.
 sinc <- function(u) {
-  sin(u) / (pi * u)
+  ifelse(u == 0, 
+         1,  # When u = 0, limit of sin(u)/(pi*u) is 1
+         sin(u) / (pi * u))
 }
 
 #' Define the closed form FT of the infinite order kernel sin(x)/(pi*x)

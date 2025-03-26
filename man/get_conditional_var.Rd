@@ -18,7 +18,8 @@ get_conditional_var(X, Y, x, h, kernel_func)
 \item{kernel_func}{A kernel function used to weigh observations in the neighborhood of point x.}
 }
 \value{
-Returns a scalar representing the estimated conditional variance of Y given X at the point x.
+Returns a non-negative scalar representing the estimated conditional variance of Y given X at the point x.
+Returns 0 if the computed variance is negative.
 }
 \description{
 get the conditional variance of Y on X for given x

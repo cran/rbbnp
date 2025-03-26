@@ -10,7 +10,7 @@
 #' @return A ggplot object representing the plot of the Fourier transform.
 #'
 #' @details
-#' C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in Schennach (2020) \doi{10.1093/restud/rdz065}.
+#' C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in in Schennach (2020).
 #'
 #' @export
 #'
@@ -97,57 +97,38 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
                               xi_lb = NULL, xi_ub = NULL, methods_get_xi = "Schennach",
                               if_plot_density = TRUE, if_plot_ft = FALSE, ora_Ar = NULL,
                               kernel.fun = "Schennach2004", if_approx_kernel = TRUE, kernel.resol = 1000) {
-  # determine the kernel and kernel FT function
-  if (kernel.fun == "Schennach2004") {
-    # if approx the kernel in Schennach2004
-    if (if_approx_kernel) {
-      # determine the range of the interpolation
-      u_lb <- -(max(X) - min(X)) / h * 10
-      u_ub <- (max(X) - min(X)) / h * 10
 
-      inf_k <- function(u) fun_approx(u, u_lb = u_lb, u_ub = u_ub, resol = kernel.resol)
-    } else {
-      inf_k <- W_kernel
-    }
-    inf_k_ft <- W_kernel_ft
-  }
+  # Create a configuration object that contains all settings and pre-computed values
+  config <- create_biasBound_config(
+    X = X,
+    h = h,
+    alpha = alpha,
+    resol = resol,
+    xi_lb = xi_lb,
+    xi_ub = xi_ub,
+    methods_get_xi = methods_get_xi,
+    kernel.fun = kernel.fun,
+    if_approx_kernel = if_approx_kernel,
+    kernel.resol = kernel.resol
+  )
 
-  if (kernel.fun == "sinc") {
-    inf_k <- sinc
-    inf_k_ft <- sinc_ft
-  }
+  # Extract necessary values from config
+  inf_k <- config$kernel_functions$kernel
+  xi_interval <- config$xi_interval
+  est_Ar <- config$est_Ar
+  b1x <- config$b1x
 
-  if (kernel.fun == "normal") {
-    inf_k <- normal_kernel
-    inf_k_ft <- normal_kernel_ft
-  }
-
-  if (kernel.fun == "epanechnikov") {
-    inf_k <- epanechnikov_kernel
-    inf_k_ft <- epanechnikov_kernel_ft
-  }
-  #-------------------------------------------
-
-  # get the interval of xi if it is not specified
-  if (is.null(xi_lb) | is.null(xi_ub)) {
-    xi_interval <- get_xi_interval(X = X, methods = methods_get_xi)
-  } else {
-    xi_interval <- list(xi_lb = xi_lb, xi_ub = xi_ub)
-  }
-
-  # get the estimation of A, r, bias_1x
-  est_Ar <- get_est_Ar(X = X, xi_interval = xi_interval)
-  b1x <- get_est_b1x(X = X, h = h, est_Ar = est_Ar, inf_k_ft = inf_k_ft)
-
+  # Initialize return list with config values
   return_list <- list(est_Ar = est_Ar, b1x = b1x)
 
-  # plot the Fourier transformation when estimate the A and r
+  # Plot the Fourier transformation
   if (if_plot_ft) {
-    p <- plot_ft(X, xi_interval = xi_interval) + geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
+    p <- plot_ft(X, xi_interval = xi_interval) +
+         geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
     return_list[["ft_plot"]] <- p
   }
 
-  # if not specify the x, then we create the whole interval and plot the estimation
+  # If x is not specified, create a range and plot the estimation
   if (is.null(x)) {
     x_range <- seq(min(X), max(X), length.out = resol)
     f1x <- purrr::map(x_range, get_avg_f1x, X = X, h = h, inf_k = inf_k) %>% unlist()
@@ -159,7 +140,7 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
     lb <- pmax(f1x - sigma * qnorm(1 - alpha / 2) - b1x, 0)
     ub <- pmax(f1x + sigma * qnorm(1 - alpha / 2) + b1x, 0)
 
-    # plot the density estimation with the bands of bias and sd
+    # Plot the density estimation with the bands of bias and sd
     if (if_plot_density) {
       data <- data.frame(X = x_range, f1x = f1x, ub_bias = ub_bias, lb_bias = lb_bias, ub = ub, lb = lb)
 
@@ -173,7 +154,7 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
         geom_line(color = "blue") +
         labs(title = "estimated f(x) and CI", x = "X", y = "f(x)")
 
-      # add oracle bias band
+      # Add oracle bias band if provided
       if (!is.null(ora_Ar)) {
         ora_b1x <- get_est_b1x(h = h, est_Ar = ora_Ar)
         lb_ora_bias <- pmax(f1x - ora_b1x, 0)
@@ -193,7 +174,8 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
       return_list[["lb_bias"]] <- lb_bias
       return_list[["sigma"]] <- sigma
     }
-  } else { # if specific x is provided then give the point estimation
+  } else {
+    # Point estimation for specific x values
     f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
     sigma <- get_sigma(X, x, h, inf_k = inf_k)
 
@@ -205,8 +187,6 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
 
   return(return_list)
 }
-
-
 
 #' Bias bound approach for conditional expectation estimation
 #'
@@ -261,58 +241,40 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
     stop("X and Y must have the same length!")
   }
 
-  # determine the kernel and kernel FT function
-  if (kernel.fun == "Schennach2004") {
-    # if approx the kernel in Schennach2004
-    if (if_approx_kernel) {
-      # determine the range of the interpolation
-      u_lb <- -(max(X) - min(X)) / h * 10
-      u_ub <- (max(X) - min(X)) / h * 10
+  # Create a configuration object that contains all settings and pre-computed values
+  config <- create_biasBound_config(
+    X = X,
+    Y = Y,
+    h = h,
+    alpha = alpha,
+    resol = resol,
+    xi_lb = xi_lb,
+    xi_ub = xi_ub,
+    methods_get_xi = methods_get_xi,
+    kernel.fun = kernel.fun,
+    if_approx_kernel = if_approx_kernel,
+    kernel.resol = kernel.resol
+  )
 
-      inf_k <- function(u) fun_approx(u, u_lb = u_lb, u_ub = u_ub, resol = kernel.resol)
-    } else {
-      inf_k <- W_kernel
-    }
-    inf_k_ft <- W_kernel_ft
-  }
+  # Extract necessary values from config
+  inf_k <- config$kernel_functions$kernel
+  xi_interval <- config$xi_interval
+  est_Ar <- config$est_Ar
+  b1x <- config$b1x
+  est_B <- config$est_B
+  byx <- config$byx
 
-  if (kernel.fun == "sinc") {
-    inf_k <- sinc
-    inf_k_ft <- sinc_ft
-  }
+  # Initialize return list with config values
 
-  if (kernel.fun == "normal") {
-    inf_k <- normal_kernel
-    inf_k_ft <- normal_kernel_ft
-  }
-
-  if (kernel.fun == "epanechnikov") {
-    inf_k <- epanechnikov_kernel
-    inf_k_ft <- epanechnikov_kernel_ft
-  }
-  #-------------------------------------------
-
-  # get the interval of xi if it is not specified
-  if (is.null(xi_lb) | is.null(xi_ub)) {
-    xi_interval <- get_xi_interval(Y = Y, X = X, methods = methods_get_xi)
-  } else {
-    xi_interval <- list(xi_lb = xi_lb, xi_ub = xi_ub)
-  }
-
-  # get the estimation of A, r, B, bias_1x, bias_yx
-  est_Ar <- get_est_Ar(X = X, xi_interval = xi_interval)
-  b1x <- get_est_b1x(X = X, h = h, est_Ar = est_Ar, inf_k_ft = inf_k_ft)
-  est_B <- get_est_B(Y = Y)
-  byx <- get_est_byx(Y = Y, X = X, h = h, est_Ar = est_Ar, est_B = est_B, inf_k_ft = inf_k_ft)
   return_list <- list(est_Ar = est_Ar, est_B = est_B, b1x = b1x, byx = byx)
 
-  # plot the Fourier transformation when estimate the A and r
+  # Plot the Fourier transformation
   if (if_plot_ft) {
-    p <- plot_ft(X) + geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
+    p <- plot_ft(X, xi_interval = xi_interval) + geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
     return_list[["ft_plot"]] <- p
   }
 
-  # if not specify the x, then wen create the whole interval and plot the estimation
+  # If x is not specified, create a range and plot the estimation
   if (is.null(x)) {
     x_range <- seq(min(X), max(X), length.out = resol)
     f1x <- purrr::map(x_range, get_avg_f1x, X = X, h = h, inf_k = inf_k) %>% unlist()
@@ -325,7 +287,7 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
 
     conditional_mean_yx <- fyx / f1x
 
-    # plot the conditional mean estitmation and its confidence interval
+    # Plot the conditional mean estimation and its confidence interval
     if (if_plot_conditional_mean) {
       data <- data.frame(X = x_range, conditional_mean_yx = conditional_mean_yx, Y = Y, ub = ub, lb = lb)
 
@@ -335,9 +297,8 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
       ylower <- ylower - 0.05 * (yupper - ylower)
       yupper <- yupper + 0.05 * (yupper - ylower)
 
-      # plot the estimation
+      # Plot the estimation
       gg <- ggplot() +
-
         # For the ribbon and line
         geom_ribbon(data = data, aes(x = X, ymin = lb, ymax = ub), fill = "grey", alpha = 0.8) +
         geom_line(data = data, aes(x = X, y = conditional_mean_yx), color = "blue") +
@@ -354,7 +315,8 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
       return_list[["sigma"]] <- sigma
       return_list[["sigma_yx"]] <- sigma_yx
     }
-  } else { # if specific x is provided then give the point estimation
+  } else {
+    # Point estimation for specific x value
     f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
     fyx <- get_avg_fyx(Y = Y, X = X, x = x, h = h, inf_k = inf_k)
     sigma <- get_sigma(X, x, h, inf_k = inf_k)

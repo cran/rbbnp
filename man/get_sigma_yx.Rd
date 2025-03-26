@@ -19,6 +19,7 @@ get_sigma_yx(Y, X, x, h, inf_k)
 }
 \value{
 Returns a scalar representing the estimated value of sigma_yx at the point x.
+Returns 0 if either fyx or conditional variance is negative.
 }
 \description{
 Estimation of sigma_yx
