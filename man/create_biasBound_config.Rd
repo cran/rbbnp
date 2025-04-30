@@ -7,7 +7,9 @@
 create_biasBound_config(
   X,
   Y = NULL,
-  h = 0.09,
+  h = NULL,
+  h_method = "cv",
+  use_fft = TRUE,
   alpha = 0.05,
   resol = 100,
   xi_lb = NULL,
@@ -23,7 +25,11 @@ create_biasBound_config(
 
 \item{Y}{Optional. A numerical vector of sample data for conditional expectation.}
 
-\item{h}{A scalar bandwidth parameter.}
+\item{h}{A scalar bandwidth parameter. If NULL, the bandwidth is automatically selected using the method specified in 'h_method'.}
+
+\item{h_method}{Method for automatic bandwidth selection when h is NULL. Options are "cv" (cross-validation) and "silverman" (Silverman's rule of thumb). Default is "cv".}
+
+\item{use_fft}{Ignored. Maintained for backward compatibility.}
 
 \item{alpha}{Confidence level for intervals.}
 
@@ -35,7 +41,7 @@ create_biasBound_config(
 
 \item{methods_get_xi}{Method to determine xi interval.}
 
-\item{kernel.fun}{Kernel function to be used.}
+\item{kernel.fun}{Kernel function to be used. Options include "normal", "epanechnikov", "Schennach2004", and "sinc".}
 
 \item{if_approx_kernel}{Use approximations for the kernel function.}
 

@@ -8,7 +8,8 @@ biasBound_condExpectation(
   Y,
   X,
   x = NULL,
-  h = 0.09,
+  h = NULL,
+  h_method = "cv",
   alpha = 0.05,
   est_Ar = NULL,
   resol = 100,
@@ -30,7 +31,9 @@ biasBound_condExpectation(
 
 \item{x}{Optional. A scalar or range of points where the density is estimated. If NULL, a range is automatically generated.}
 
-\item{h}{A scalar bandwidth parameter.}
+\item{h}{A scalar bandwidth parameter. If NULL, the bandwidth is automatically selected using the method specified in 'h_method'.}
+
+\item{h_method}{Method for automatic bandwidth selection when h is NULL. Options are "cv" (cross-validation) and "silverman" (Silverman's rule of thumb). Default is "cv".}
 
 \item{alpha}{Confidence level for intervals. Default is 0.05.}
 
@@ -74,13 +77,25 @@ biasBound_condExpectation(
  kernel.fun = "Schennach2004"
 )
 
-# Example 2: conditional expectation of Y on X with manually selected range of xi
+# Example 2: conditional expectation with automatic bandwidth selection using cross-validation
 # biasBound_condExpectation(
 # Y = sample_data$Y,
 #  X = sample_data$X,
-#  h = 0.09,
+#  h = NULL,
+#  h_method = "cv",
 #  xi_lb = 1,
 #  xi_ub = 12,
+#  kernel.fun = "Schennach2004"
+# )
+
+# Example 3: conditional expectation with automatic bandwidth selection using Silverman's rule
+# biasBound_condExpectation(
+# Y = sample_data$Y,
+#  X = sample_data$X,
+#  h = NULL,
+#  h_method = "silverman",
+#  methods_get_xi = "Schennach",
+#  if_plot_ft = TRUE,
 #  kernel.fun = "Schennach2004"
 # )
 }

@@ -1,7 +1,7 @@
 Package: rbbnp
 Type: Package
 Title: A Bias Bound Approach to Non-Parametric Inference
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person("Xinyu", "DAI", email = "xinyu_dai@brown.edu", role = c("aut", "cre")),
     person("Susanne M", "Schennach", role = "aut"))
@@ -20,8 +20,8 @@ Imports: purrr, pracma, tidyr, dplyr, ggplot2, gridExtra
 RoxygenNote: 7.3.2
 Depends: R (>= 3.5)
 NeedsCompilation: no
-Packaged: 2025-03-26 17:20:41 UTC; 53500
+Packaged: 2025-04-30 18:44:35 UTC; 53500
 Author: Xinyu DAI [aut, cre],
   Susanne M Schennach [aut]
 Repository: CRAN
-Date/Publication: 2025-03-26 17:40:02 UTC
+Date/Publication: 2025-04-30 19:20:01 UTC

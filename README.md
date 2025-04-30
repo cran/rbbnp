@@ -4,7 +4,7 @@ A Bias Bound Approach to Non-parametric Inference
 
 This is an affiliated package for Susanne M Schennach, A Bias Bound Approach to Non-parametric Inference, *The Review of Economic Studies*, Volume 87, Issue 5, October 2020, Pages 2439–2472, <https://doi.org/10.1093/restud/rdz065>
 
-*version 0.1.0*
+*version 0.3.0*
 
 ### Build up the package for your first time to use
 

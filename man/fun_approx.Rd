@@ -4,7 +4,7 @@
 \alias{fun_approx}
 \title{Approximation Function for Intensive Calculations}
 \usage{
-fun_approx(u, u_lb = -100, u_ub = 100, resol = 1000, fun = W_kernel)
+fun_approx(u, u_lb = -100, u_ub = 100, resol = 10000, fun = W_kernel)
 }
 \arguments{
 \item{u}{A vector of values where the function should be evaluated.}

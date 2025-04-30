@@ -47,7 +47,8 @@ plot_ft <- function(X,
 #'
 #' @param X A numerical vector of sample data.
 #' @param x Optional. A scalar or range of points where the density is estimated. If NULL, a range is automatically generated.
-#' @param h A scalar bandwidth parameter.
+#' @param h A scalar bandwidth parameter. If NULL, the bandwidth is automatically selected using the method specified in 'h_method'.
+#' @param h_method Method for automatic bandwidth selection when h is NULL. Options are "cv" (cross-validation) and "silverman" (Silverman's rule of thumb). Default is "cv".
 #' @param alpha Confidence level for intervals. Default is 0.05.
 #' @param resol Resolution for the estimation range. Default is 100.
 #' @param xi_lb Optional. Lower bound for the interval of Fourier Transform frequency xi. Used for determining the range over which A and r is estimated. If NULL, it is automatically determined based on the methods_get_xi.
@@ -63,7 +64,8 @@ plot_ft <- function(X,
 #' @export
 #' @examples
 #' \donttest{
-#' # Example 1: Specifying x for point estimation with manually selected xi range from 1 to 12
+#' # Example 1: Specifying x for point estimation with manually selected xi range
+#' # from a fixed bandwidth
 #' biasBound_density(
 #'   X = sample_data$X,
 #'   x = 1,
@@ -74,26 +76,28 @@ plot_ft <- function(X,
 #'   kernel.fun = "Schennach2004"
 #' )
 #'
-#' # Example 2: Density estimation with manually selected xi range from 1 to 12 xi_lb and xi_ub
+#' # Example 2: Density estimation with automatic bandwidth selection using cross-validation
 #' # biasBound_density(
 #' #   X = sample_data$X,
-#' #   h = 0.09,
+#' #   h = NULL,
+#' #   h_method = "cv",
 #' #   xi_lb = 1,
 #' #   xi_ub = 12,
 #' #   if_plot_ft = FALSE,
 #' #   kernel.fun = "Schennach2004"
 #' # )
 #'
-#' # Example 3: Density estimation with automatically selected xi range via Theorem 2 in Schennach 2020
+#' # Example 3: Density estimation with automatic bandwidth selection using Silverman's rule
 #' #  biasBound_density(
 #' #   X = sample_data$X,
-#' #   h = 0.09,
+#' #   h = NULL,
+#' #   h_method = "silverman",
 #' #   methods_get_xi = "Schennach",
 #' #   if_plot_ft = TRUE,
 #' #   kernel.fun = "Schennach2004"
 #' # )
 #' }
-biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
+biasBound_density <- function(X, x = NULL, h = NULL, h_method = "cv", alpha = 0.05, resol = 100,
                               xi_lb = NULL, xi_ub = NULL, methods_get_xi = "Schennach",
                               if_plot_density = TRUE, if_plot_ft = FALSE, ora_Ar = NULL,
                               kernel.fun = "Schennach2004", if_approx_kernel = TRUE, kernel.resol = 1000) {
@@ -102,6 +106,7 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
   config <- create_biasBound_config(
     X = X,
     h = h,
+    h_method = h_method,
     alpha = alpha,
     resol = resol,
     xi_lb = xi_lb,
@@ -117,9 +122,10 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
   xi_interval <- config$xi_interval
   est_Ar <- config$est_Ar
   b1x <- config$b1x
+  h <- config$h  # Get the possibly auto-selected bandwidth
 
   # Initialize return list with config values
-  return_list <- list(est_Ar = est_Ar, b1x = b1x)
+  return_list <- list(est_Ar = est_Ar, b1x = b1x, h = h)
 
   # Plot the Fourier transformation
   if (if_plot_ft) {
@@ -130,7 +136,7 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
 
   # If x is not specified, create a range and plot the estimation
   if (is.null(x)) {
-    x_range <- seq(min(X), max(X), length.out = resol)
+    x_range <- seq(min(X) - sd(X)*0.5, max(X) + sd(X) * 0.5, length.out = resol)
     f1x <- purrr::map(x_range, get_avg_f1x, X = X, h = h, inf_k = inf_k) %>% unlist()
     sigma <- purrr::map(x_range, get_sigma, X = X, h = h, inf_k = inf_k) %>% unlist()
 
@@ -196,7 +202,8 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
 #' @param Y A numerical vector of sample data.
 #' @param X A numerical vector of sample data.
 #' @param x Optional. A scalar or range of points where the density is estimated. If NULL, a range is automatically generated.
-#' @param h A scalar bandwidth parameter.
+#' @param h A scalar bandwidth parameter. If NULL, the bandwidth is automatically selected using the method specified in 'h_method'.
+#' @param h_method Method for automatic bandwidth selection when h is NULL. Options are "cv" (cross-validation) and "silverman" (Silverman's rule of thumb). Default is "cv".
 #' @param alpha Confidence level for intervals. Default is 0.05.
 #' @param est_Ar Optional list of estimates for A and r. If NULL, they are computed using `get_est_Ar()`.
 #' @param resol Resolution for the estimation range. Default is 100.
@@ -222,17 +229,29 @@ biasBound_density <- function(X, x = NULL, h = 0.09, alpha = 0.05, resol = 100,
 #'  kernel.fun = "Schennach2004"
 #' )
 #'
-#' # Example 2: conditional expectation of Y on X with manually selected range of xi
+#' # Example 2: conditional expectation with automatic bandwidth selection using cross-validation
 #' # biasBound_condExpectation(
 #' # Y = sample_data$Y,
 #' #  X = sample_data$X,
-#' #  h = 0.09,
+#' #  h = NULL,
+#' #  h_method = "cv",
 #' #  xi_lb = 1,
 #' #  xi_ub = 12,
 #' #  kernel.fun = "Schennach2004"
 #' # )
+#'
+#' # Example 3: conditional expectation with automatic bandwidth selection using Silverman's rule
+#' # biasBound_condExpectation(
+#' # Y = sample_data$Y,
+#' #  X = sample_data$X,
+#' #  h = NULL,
+#' #  h_method = "silverman",
+#' #  methods_get_xi = "Schennach",
+#' #  if_plot_ft = TRUE,
+#' #  kernel.fun = "Schennach2004"
+#' # )
 #' }
-biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, est_Ar = NULL, resol = 100,
+biasBound_condExpectation <- function(Y, X, x = NULL, h = NULL, h_method = "cv", alpha = 0.05, est_Ar = NULL, resol = 100,
                                       xi_lb = NULL, xi_ub = NULL, methods_get_xi = "Schennach",
                                       if_plot_ft = FALSE, ora_Ar = NULL, if_plot_conditional_mean = TRUE,
                                       kernel.fun = "Schennach2004", if_approx_kernel = TRUE, kernel.resol = 1000) {
@@ -246,6 +265,7 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
     X = X,
     Y = Y,
     h = h,
+    h_method = h_method,
     alpha = alpha,
     resol = resol,
     xi_lb = xi_lb,
@@ -263,10 +283,10 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = 0.09, alpha = 0.05, es
   b1x <- config$b1x
   est_B <- config$est_B
   byx <- config$byx
+  h <- config$h  # Get the possibly auto-selected bandwidth
 
   # Initialize return list with config values
-
-  return_list <- list(est_Ar = est_Ar, est_B = est_B, b1x = b1x, byx = byx)
+  return_list <- list(est_Ar = est_Ar, est_B = est_B, b1x = b1x, byx = byx, h = h)
 
   # Plot the Fourier transformation
   if (if_plot_ft) {

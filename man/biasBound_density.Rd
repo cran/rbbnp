@@ -7,7 +7,8 @@
 biasBound_density(
   X,
   x = NULL,
-  h = 0.09,
+  h = NULL,
+  h_method = "cv",
   alpha = 0.05,
   resol = 100,
   xi_lb = NULL,
@@ -26,7 +27,9 @@ biasBound_density(
 
 \item{x}{Optional. A scalar or range of points where the density is estimated. If NULL, a range is automatically generated.}
 
-\item{h}{A scalar bandwidth parameter.}
+\item{h}{A scalar bandwidth parameter. If NULL, the bandwidth is automatically selected using the method specified in 'h_method'.}
+
+\item{h_method}{Method for automatic bandwidth selection when h is NULL. Options are "cv" (cross-validation) and "silverman" (Silverman's rule of thumb). Default is "cv".}
 
 \item{alpha}{Confidence level for intervals. Default is 0.05.}
 
@@ -59,7 +62,8 @@ bias, and confidence intervals.
 }
 \examples{
 \donttest{
-# Example 1: Specifying x for point estimation with manually selected xi range from 1 to 12
+# Example 1: Specifying x for point estimation with manually selected xi range
+# from a fixed bandwidth
 biasBound_density(
   X = sample_data$X,
   x = 1,
@@ -70,20 +74,22 @@ biasBound_density(
   kernel.fun = "Schennach2004"
 )
 
-# Example 2: Density estimation with manually selected xi range from 1 to 12 xi_lb and xi_ub
+# Example 2: Density estimation with automatic bandwidth selection using cross-validation
 # biasBound_density(
 #   X = sample_data$X,
-#   h = 0.09,
+#   h = NULL,
+#   h_method = "cv",
 #   xi_lb = 1,
 #   xi_ub = 12,
 #   if_plot_ft = FALSE,
 #   kernel.fun = "Schennach2004"
 # )
 
-# Example 3: Density estimation with automatically selected xi range via Theorem 2 in Schennach 2020
+# Example 3: Density estimation with automatic bandwidth selection using Silverman's rule
 #  biasBound_density(
 #   X = sample_data$X,
-#   h = 0.09,
+#   h = NULL,
+#   h_method = "silverman",
 #   methods_get_xi = "Schennach",
 #   if_plot_ft = TRUE,
 #   kernel.fun = "Schennach2004"

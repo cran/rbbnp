@@ -4,12 +4,18 @@
 \alias{get_est_b1x}
 \title{Estimation of bias b1x}
 \usage{
-get_est_b1x(X, ...)
+get_est_b1x(X, h, est_Ar, inf_k_ft, ...)
 }
 \arguments{
 \item{X}{A numerical vector representing the sample data of variable X.}
 
-\item{...}{Additional arguments passed to other methods.}
+\item{h}{A scalar bandwidth parameter.}
+
+\item{est_Ar}{A vector containing the estimated A and r parameters.}
+
+\item{inf_k_ft}{A kernel Fourier transform function.}
+
+\item{...}{Additional arguments passed to the quadgk integration function.}
 }
 \value{
 A scalar representing the bias b1x estimate.

@@ -199,18 +199,20 @@ get_est_B <- function(Y) {
 #' Computes the bias estimate for given parameters.
 #'
 #' @param X A numerical vector representing the sample data of variable X.
-#' @param ... Additional arguments passed to other methods.
+#' @param h A scalar bandwidth parameter.
+#' @param est_Ar A vector containing the estimated A and r parameters.
+#' @param inf_k_ft A kernel Fourier transform function.
+#' @param ... Additional arguments passed to the quadgk integration function.
 #' @return A scalar representing the bias b1x estimate.
-get_est_b1x <- function(X, ...) {
+get_est_b1x <- function(X, h, est_Ar, inf_k_ft, ...) {
 
   # Integration expression of b1x
-  b1x_int <- function(xi, h, est_Ar = get_est_Ar(X = X), inf_k_ft = W_kernel_ft) {
+  b1x_int <- function(xi) {
     Mod(1 - inf_k_ft(xi * h)) * apply(cbind(1, est_Ar[1] * abs(xi)^(-est_Ar[2])), FUN = min, MARGIN = 1)
   }
 
   pracma::quadgk(b1x_int, a = -99999, b = 100000, ...) / (2 * pi)
 }
-
 
 #' Estimation of bias byx
 #'
@@ -293,7 +295,7 @@ get_conditional_var <- function(X, Y, x, h, kernel_func) {
 
   # Compute conditional variance
   conditional_var <- kernel_reg(X, residuals^2, x = x, h, kernel_func = kernel_func)
-  
+
   # Return 0 if variance is negative, otherwise return the computed variance
   return(max(0, conditional_var))
 }
@@ -310,16 +312,16 @@ get_conditional_var <- function(X, Y, x, h, kernel_func) {
 get_sigma <- function(X, x, h, inf_k) {
   n <- length(X)
   f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
-  
+
   # Return 0 if density estimate is negative or 0
-  if (f1x <= 0) {
+  if (is.na(f1x) || f1x <= 0) {
     return(0)
   }
-  
+
   z <- f1x / (n * h) * pracma::integral(function(x) {
     inf_k(x)^2
   }, -999, +1000)
-  
+
   return(sqrt(z))
 }
 
@@ -331,22 +333,22 @@ get_sigma <- function(X, x, h, inf_k) {
 #' @param h A bandwidth parameter used in the kernel function for smoothing.
 #' @param inf_k A kernel function used to weigh observations in the neighborhood of point x.
 #'
-#' @return Returns a scalar representing the estimated value of sigma_yx at the point x. 
+#' @return Returns a scalar representing the estimated value of sigma_yx at the point x.
 #'         Returns 0 if either fyx or conditional variance is negative.
 get_sigma_yx <- function(Y, X, x, h, inf_k) {
   n <- length(X)
   var_yx <- get_conditional_var(Y = Y, X = X, x = x, h = h, kernel_func = inf_k)
   fyx <- get_avg_fyx(Y = Y, X = X, x = x, h = h, inf_k = inf_k)
-  
+
   # Return 0 if either fyx is negative or var_yx is 0 (indicating it was negative)
   if (fyx <= 0 || var_yx <= 0) {
     return(0)
   }
-  
+
   z <- var_yx * fyx / (n * h) * pracma::integral(function(x) {
     inf_k(x)^2
   }, -999, +1000)
-  
+
   return(sqrt(z))
 }
 
@@ -383,12 +385,14 @@ fun_approx <- (function() {
   storage_env <- new.env()
 
   # The inner approximation function
-  function(u, u_lb = -100, u_ub = 100, resol = 1000, fun = W_kernel) {
+  function(u, u_lb = -100, u_ub = 100, resol = 10000, fun = W_kernel) {
     # Check if it's the first call or if parameters have changed
     if (!exists("local_interpolated_fun", envir = storage_env) ||
       storage_env$local_lb != u_lb ||
       storage_env$local_ub != u_ub ||
       storage_env$local_resol != resol) {
+
+      message("pre-computing the kernel function in the local environment")
       sample_points <- seq(u_lb, u_ub, length.out = resol)
       precomputed_W <- fun(sample_points)
       interpolated_fun <- approxfun(sample_points, precomputed_W, method = "linear")
@@ -408,4 +412,3 @@ fun_approx <- (function() {
     return(ifelse(is.na(res), 0, res))
   }
 })()
-
