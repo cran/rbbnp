@@ -15,3 +15,4 @@ Returns the value of the Fourier transform of the Epanechnikov kernel at the giv
 \description{
 Fourier Transform Epanechnikov Kernel
 }
+\keyword{internal}

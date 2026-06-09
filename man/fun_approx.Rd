@@ -39,3 +39,4 @@ This function is especially useful for computationally intensive functions where
 function values is expensive or time-consuming. By using a combination of precomputation and
 interpolation, \code{fun_approx} provides a balance between accuracy and speed.
 }
+\keyword{internal}

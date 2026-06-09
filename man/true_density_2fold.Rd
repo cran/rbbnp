@@ -15,3 +15,4 @@ The value of the true density of the 2-fold uniform distribution at each point i
 \description{
 True density of 2-fold uniform distribution
 }
+\keyword{internal}

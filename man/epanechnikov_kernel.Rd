@@ -15,3 +15,4 @@ Returns the value of the Epanechnikov kernel function at the given input.
 \description{
 Epanechnikov Kernel
 }
+\keyword{internal}

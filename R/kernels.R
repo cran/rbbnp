@@ -2,6 +2,7 @@
 #' @param u A numerical value or vector where the sinc function is evaluated.
 #'
 #' @return The value of the sinc function at each point in `u`.
+#' @keywords internal
 sinc <- function(u) {
   ifelse(u == 0,
          1,  # When u = 0, limit of sin(u)/(pi*u) is 1
@@ -14,6 +15,7 @@ sinc <- function(u) {
 #'
 #' @return The value of the Fourier Transform of the sinc function at each point in `x`.
 #'
+#' @keywords internal
 sinc_ft <- function(x) {
   (sign(x + pi) - sign(x - pi)) / 2
 }
@@ -27,6 +29,7 @@ sinc_ft <- function(x) {
 #' @return A numerical value or vector representing the Fourier transform of the infinite
 #'         order kernel at the given frequency/frequencies.
 #'
+#' @keywords internal
 W_kernel_ft <- function(xi, xi_lb = 0.5, xi_ub = 1.5) {
   condition1 <- abs(xi) <= xi_lb
   condition2 <- abs(xi) <= xi_ub & abs(xi) >= xi_lb
@@ -50,6 +53,7 @@ W_kernel_ft <- function(xi, xi_lb = 0.5, xi_ub = 1.5) {
 #' @return A numerical value or vector representing the inverse Fourier transform of the infinite
 #'         order kernel at the given time or space point(s).
 #'
+#' @keywords internal
 W_kernel <- function(u, L = 10) {
   inv_ft <- sapply(u, function(t) {
     integrand_func <- function(xi) {
@@ -69,6 +73,7 @@ W_kernel <- function(u, L = 10) {
 #'
 #' @return Returns the value of the Normal kernel function at the given input.
 #'
+#' @keywords internal
 normal_kernel <- function(u) {
   dnorm(u, mean = 0, sd = 1)
 }
@@ -79,6 +84,7 @@ normal_kernel <- function(u) {
 #'
 #' @return Returns the value of the Fourier transform of the Normal kernel at the given frequency/frequencies.
 #'
+#' @keywords internal
 normal_kernel_ft <- function(xi) {
   dnorm(xi, mean = 0, sd = 1) * (sqrt(2 * pi))
 }
@@ -89,6 +95,7 @@ normal_kernel_ft <- function(xi) {
 #'
 #' @return Returns the value of the Epanechnikov kernel function at the given input.
 #'
+#' @keywords internal
 epanechnikov_kernel <- function(u) {
   ifelse(abs(u) <= 1, 0.75 * (1 - u^2), 0)
 }
@@ -99,6 +106,7 @@ epanechnikov_kernel <- function(u) {
 #'
 #' @return Returns the value of the Fourier transform of the Epanechnikov kernel at the given frequency/frequencies.
 #'
+#' @keywords internal
 epanechnikov_kernel_ft <- function(xi) {
   (3 * sin(xi)) / (2 * xi) - (3 * (2 * xi * cos(xi) + (-2 + xi^2) * sin(xi))) / (2 * xi^3)
 }

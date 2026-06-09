@@ -1,6 +1,10 @@
-#' Plot the Fourier Transform
+#' Plot the Fourier Transform (Deprecated)
 #'
-#' Plot the Fourier Transform of the
+#' @description
+#' **Deprecated:** This function is deprecated and will be removed in a future version.
+#'
+#' Use \code{plot(fit, type = "ft")} instead, where
+#' \code{fit} is a \code{bbnp_density} or \code{bbnp_regression} object.
 #'
 #' @param X A numerical vector of sample data.
 #' @param xi_interval A list containing the lower (`xi_lb`) and upper (`xi_ub`) bounds of the xi interval.
@@ -13,16 +17,28 @@
 #' C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in in Schennach (2020).
 #'
 #' @export
+#' @keywords internal
 #'
 #' @examples
-#' plot_ft(
-#'   sample_data$X,
-#'   xi_interval = list(xi_lb = 1, xi_ub = 50),
-#'   ft_plot.resol = 1000
-#' )
+#' \dontrun{
+#' # Old (deprecated):
+#' # plot_ft(sample_data$X, xi_interval = list(xi_lb = 1, xi_ub = 50))
+#'
+#' # New (recommended):
+#' fit <- biasBound_density(sample_data$X, h = 0.1)
+#' plot(fit, type = "ft")
+#' }
 plot_ft <- function(X,
                     xi_interval,
                     ft_plot.resol = 500) {
+
+  .Deprecated(
+    msg = paste0(
+      "'plot_ft()' is deprecated. ",
+      "Use plot(fit, type = \"ft\") instead, where fit is a bbnp_density or bbnp_regression object. ",
+      "See ?biasBound_density for examples."
+    )
+  )
 
   xi_lb <- xi_interval$xi_lb
   xi_ub <- xi_interval$xi_ub
@@ -53,54 +69,51 @@ plot_ft <- function(X,
 #' @param resol Resolution for the estimation range. Default is 100.
 #' @param xi_lb Optional. Lower bound for the interval of Fourier Transform frequency xi. Used for determining the range over which A and r is estimated. If NULL, it is automatically determined based on the methods_get_xi.
 #' @param xi_ub Optional. Upper bound for the interval of Fourier Transform frequency xi. Similar to xi_lb, it defines the upper range for A and r estimation. If NULL, the upper bound is determined based on the methods_get_xi.
-#' @param methods_get_xi A string specifying the method to automatically determine the xi interval if xi_lb and xi_ub are NULL. Options are "Schennach" and "Schennach_loose". If "Schennach" the range is selected based on the Theorem 2 in Schennach2020, if "Schennach_loose", it is defined by the initial interval given in Theorem 2 without selecting the xi_n.
-#' @param if_plot_density Logical. If TRUE, plots the density estimation.
-#' @param if_plot_ft Logical. If TRUE, plots the Fourier transform.
-#' @param ora_Ar Optional list of oracle values for A and r.
+#' @param methods_get_xi A string selecting the frequency-window rule used when xi_lb/xi_ub are NULL: "snr" (default; a signal-to-noise cutoff that selects a valid window at realistic sample sizes), "Schennach" (the data-driven rule of Schennach 2020, Theorem 2), or "Schennach_loose" (the initial, un-refined interval).
+#' @param noise_floor Noise-floor form for the Schennach test: "auto" (default), "compact", or "general".
+#' @param envelope_use_Y If TRUE (default), fit the regression envelope to the cross-spectrum `|phi_YX|`; if FALSE, fit it to the marginal spectrum `|phi_X|`.
+#' @param integer_r If TRUE (default), clamp the fitted envelope slope up to r = 2 when it falls below the minimum smoothness assumed by Schennach (2020, Definition 2), i.e. r < 2, and refit A; this keeps the bias-bound integral finite. Slopes >= 2 are left unchanged.
+#' @param ora_Ar Optional list of oracle values for A and r (for research/comparison purposes).
 #' @param kernel.fun A string specifying the kernel function to be used. Options are "Schennach2004", "sinc", "normal", "epanechnikov".
 #' @param if_approx_kernel Logical. If TRUE, uses approximations for the kernel function.
 #' @param kernel.resol The resolution for kernel function approximation. See \code{\link{fun_approx}}.
-#' @return A list containing various outputs including estimated values, plots, and intervals.
+#' @return An object of class \code{bbnp_density} with components:
+#'   \item{density}{Density estimates (for range estimation)}
+#'   \item{x}{Evaluation points}
+#'   \item{estimate}{Point estimate (for single x)}
+#'   \item{conf_int}{List containing lower, upper bounds and conf_level}
+#'   \item{bias_bound}{List containing b1x, est_A, est_r, xi_interval}
+#'   \item{std_error}{Standard errors}
+#'   \item{call}{The function call}
+#'   \item{bandwidth}{Bandwidth used}
+#'   \item{n}{Sample size}
+#'   \item{kernel}{Kernel type}
+#'   \item{data}{Original data}
+#'
+#'   Use \code{plot()}, \code{summary()}, \code{coef()}, and \code{confint()} methods to work with the result.
 #' @export
 #' @examples
 #' \donttest{
-#' # Example 1: Specifying x for point estimation with manually selected xi range
-#' # from a fixed bandwidth
-#' biasBound_density(
-#'   X = sample_data$X,
-#'   x = 1,
-#'   h = 0.09,
-#'   xi_lb = 1,
-#'   xi_ub = 12,
-#'   if_plot_ft = TRUE,
-#'   kernel.fun = "Schennach2004"
-#' )
+#' # Example 1: Point estimation at x = 1
+#' X <- rnorm(100)
+#' fit <- biasBound_density(X = X, x = 1, h = 0.09)
+#' print(fit)
+#' coef(fit)
 #'
-#' # Example 2: Density estimation with automatic bandwidth selection using cross-validation
-#' # biasBound_density(
-#' #   X = sample_data$X,
-#' #   h = NULL,
-#' #   h_method = "cv",
-#' #   xi_lb = 1,
-#' #   xi_ub = 12,
-#' #   if_plot_ft = FALSE,
-#' #   kernel.fun = "Schennach2004"
-#' # )
-#'
-#' # Example 3: Density estimation with automatic bandwidth selection using Silverman's rule
-#' #  biasBound_density(
-#' #   X = sample_data$X,
-#' #   h = NULL,
-#' #   h_method = "silverman",
-#' #   methods_get_xi = "Schennach",
-#' #   if_plot_ft = TRUE,
-#' #   kernel.fun = "Schennach2004"
-#' # )
+#' # Example 2: Range estimation with automatic bandwidth
+#' fit2 <- biasBound_density(X = X, h = NULL, h_method = "cv")
+#' plot(fit2)           # Density plot
+#' plot(fit2, type = "ft")  # Fourier transform plot
+#' summary(fit2)
 #' }
 biasBound_density <- function(X, x = NULL, h = NULL, h_method = "cv", alpha = 0.05, resol = 100,
-                              xi_lb = NULL, xi_ub = NULL, methods_get_xi = "Schennach",
-                              if_plot_density = TRUE, if_plot_ft = FALSE, ora_Ar = NULL,
+                              xi_lb = NULL, xi_ub = NULL, methods_get_xi = "snr",
+                              noise_floor = "auto", envelope_use_Y = TRUE, integer_r = TRUE,
+                              ora_Ar = NULL,
                               kernel.fun = "Schennach2004", if_approx_kernel = TRUE, kernel.resol = 1000) {
+
+  # Capture the function call
+  call <- match.call()
 
   # Create a configuration object that contains all settings and pre-computed values
   config <- create_biasBound_config(
@@ -112,6 +125,9 @@ biasBound_density <- function(X, x = NULL, h = NULL, h_method = "cv", alpha = 0.
     xi_lb = xi_lb,
     xi_ub = xi_ub,
     methods_get_xi = methods_get_xi,
+    noise_floor = noise_floor,
+    envelope_use_Y = envelope_use_Y,
+    integer_r = integer_r,
     kernel.fun = kernel.fun,
     if_approx_kernel = if_approx_kernel,
     kernel.resol = kernel.resol
@@ -124,74 +140,86 @@ biasBound_density <- function(X, x = NULL, h = NULL, h_method = "cv", alpha = 0.
   b1x <- config$b1x
   h <- config$h  # Get the possibly auto-selected bandwidth
 
-  # Initialize return list with config values
-  return_list <- list(est_Ar = est_Ar, b1x = b1x, h = h)
-
-  # Plot the Fourier transformation
-  if (if_plot_ft) {
-    p <- plot_ft(X, xi_interval = xi_interval) +
-         geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
-    return_list[["ft_plot"]] <- p
-  }
-
-  # If x is not specified, create a range and plot the estimation
+  # Compute estimates based on whether x is specified (point vs range estimation)
   if (is.null(x)) {
+    # Range estimation
     x_range <- seq(min(X) - sd(X)*0.5, max(X) + sd(X) * 0.5, length.out = resol)
     f1x <- purrr::map(x_range, get_avg_f1x, X = X, h = h, inf_k = inf_k) %>% unlist()
+    f1x <- pmax(f1x, 0)
     sigma <- purrr::map(x_range, get_sigma, X = X, h = h, inf_k = inf_k) %>% unlist()
 
-    lb_bias <- pmax(f1x - b1x, 0)
-    ub_bias <- pmax(f1x + b1x, 0)
-
+    # Compute confidence intervals
     lb <- pmax(f1x - sigma * qnorm(1 - alpha / 2) - b1x, 0)
     ub <- pmax(f1x + sigma * qnorm(1 - alpha / 2) + b1x, 0)
 
-    # Plot the density estimation with the bands of bias and sd
-    if (if_plot_density) {
-      data <- data.frame(X = x_range, f1x = f1x, ub_bias = ub_bias, lb_bias = lb_bias, ub = ub, lb = lb)
+    # Create S3 object for range estimation
+    result <- new_bbnp_density(
+      density = f1x,
+      x = x_range,
+      estimate = NULL,
+      conf_int = list(
+        lower = lb,
+        upper = ub,
+        conf_level = alpha
+      ),
+      bias_bound = list(
+        b1x = b1x,
+        est_A = est_Ar[1],
+        est_r = est_Ar[2],
+        xi_interval = xi_interval
+      ),
+      std_error = sigma,
+      call = call,
+      bandwidth = h,
+      n = length(X),
+      kernel = kernel.fun,
+      data = list(X = X),
+      internals = list(
+        config = config,
+        kernel_functions = config$kernel_functions
+      )
+    )
 
-      gg <- ggplot(data, aes(x = X, y = f1x)) +
-        geom_ribbon(aes(ymin = lb, ymax = ub),
-          fill = "green", alpha = 0.5
-        ) +
-        geom_ribbon(aes(ymin = lb_bias, ymax = ub_bias),
-          fill = "orange", alpha = 0.5
-        ) +
-        geom_line(color = "blue") +
-        labs(title = "estimated f(x) and CI", x = "X", y = "f(x)")
-
-      # Add oracle bias band if provided
-      if (!is.null(ora_Ar)) {
-        ora_b1x <- get_est_b1x(h = h, est_Ar = ora_Ar)
-        lb_ora_bias <- pmax(f1x - ora_b1x, 0)
-        ub_ora_bias <- pmax(f1x + ora_b1x, 0)
-        gg <- gg + geom_ribbon(aes(ymin = lb_ora_bias, ymax = ub_ora_bias),
-          fill = "red", alpha = 0.5
-        )
-        return_list[["ora_b1x"]] <- ora_b1x
-      }
-
-      return_list[["density_plot"]] <- gg
-      return_list[["f1x"]] <- f1x
-      return_list[["x_range"]] <- x_range
-      return_list[["ub"]] <- ub
-      return_list[["lb"]] <- lb
-      return_list[["ub_bias"]] <- ub_bias
-      return_list[["lb_bias"]] <- lb_bias
-      return_list[["sigma"]] <- sigma
-    }
   } else {
-    # Point estimation for specific x values
+    # Point estimation for specific x value
     f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
+    f1x <- max(f1x, 0)
     sigma <- get_sigma(X, x, h, inf_k = inf_k)
 
+    # Compute confidence interval
     lb <- max(c(f1x - sigma * qnorm(1 - alpha / 2) - b1x, 0))
     ub <- max(c(f1x + sigma * qnorm(1 - alpha / 2) + b1x, 0))
 
-    return_list <- c(return_list, list(f1x = f1x, CI = c(lb = lb, ub = ub)))
+    # Create S3 object for point estimation
+    result <- new_bbnp_density(
+      density = NULL,
+      x = x,
+      estimate = f1x,
+      conf_int = list(
+        lower = lb,
+        upper = ub,
+        conf_level = alpha
+      ),
+      bias_bound = list(
+        b1x = b1x,
+        est_A = est_Ar[1],
+        est_r = est_Ar[2],
+        xi_interval = xi_interval
+      ),
+      std_error = sigma,
+      call = call,
+      bandwidth = h,
+      n = length(X),
+      kernel = kernel.fun,
+      data = list(X = X),
+      internals = list(
+        config = config,
+        kernel_functions = config$kernel_functions
+      )
+    )
   }
 
-  return(return_list)
+  return(result)
 }
 
 #' Bias bound approach for conditional expectation estimation
@@ -209,52 +237,57 @@ biasBound_density <- function(X, x = NULL, h = NULL, h_method = "cv", alpha = 0.
 #' @param resol Resolution for the estimation range. Default is 100.
 #' @param xi_lb Optional. Lower bound for the interval of Fourier Transform frequency xi. Used for determining the range over which A and r is estimated. If NULL, it is automatically determined based on the methods_get_xi.
 #' @param xi_ub Optional. Upper bound for the interval of Fourier Transform frequency xi. Similar to xi_lb, it defines the upper range for A and r estimation. If NULL, the upper bound is determined based on the methods_get_xi.
-#' @param methods_get_xi A string specifying the method to automatically determine the xi interval if xi_lb and xi_ub are NULL. Options are "Schennach" and "Schennach_loose". If "Schennach" the range is selected based on the Theorem 2 in Schennach2020, if "Schennach_loose", it is defined by the initial interval given in Theorem 2 without selecting the xi_n.
-#' @param if_plot_conditional_mean Logical. If TRUE, plots the conditional mean estimation.
-#' @param if_plot_ft Logical. If TRUE, plots the Fourier transform.
-#' @param ora_Ar Optional list of oracle values for A and r.
+#' @param methods_get_xi A string selecting the frequency-window rule used when xi_lb/xi_ub are NULL: "snr" (default; a signal-to-noise cutoff that selects a valid window at realistic sample sizes), "Schennach" (the data-driven rule of Schennach 2020, Theorem 2), or "Schennach_loose" (the initial, un-refined interval).
+#' @param noise_floor Noise-floor form for the Schennach test: "auto" (default), "compact", or "general".
+#' @param envelope_use_Y If TRUE (default), fit the regression envelope to the cross-spectrum `|phi_YX|`; if FALSE, fit it to the marginal spectrum `|phi_X|`.
+#' @param integer_r If TRUE (default), clamp the fitted envelope slope up to r = 2 when it falls below the minimum smoothness assumed by Schennach (2020, Definition 2), i.e. r < 2, and refit A; this keeps the bias-bound integral finite. Slopes >= 2 are left unchanged.
+#' @param ora_Ar Optional list of oracle values for A and r (for research/comparison purposes).
 #' @param kernel.fun A string specifying the kernel function to be used. Options are "Schennach2004", "sinc", "normal", "epanechnikov".
 #' @param if_approx_kernel Logical. If TRUE, uses approximations for the kernel function.
 #' @param kernel.resol The resolution for kernel function approximation. See \code{\link{fun_approx}}.
-#' @return A list containing various outputs including estimated values, plots, and intervals.
+#' @return An object of class \code{bbnp_regression} with components:
+#'   \item{fitted_values}{\eqn{E[Y|X=x]} estimates (for range estimation)}
+#'   \item{x}{Evaluation points}
+#'   \item{estimate}{Point estimate (for single x)}
+#'   \item{conf_int}{List containing lower, upper bounds and conf_level. Note that
+#'     the confidence interval can be unbounded (i.e., contain \code{-Inf} or \code{Inf})
+#'     in regions where the estimated marginal density \eqn{\hat f(x)} is very close to zero,
+#'     because the estimator is formed as a ratio involving \eqn{1/\hat f(x)}.}
+#'   \item{bias_bound}{List containing b1x, byx, est_A, est_r, est_B, xi_interval}
+#'   \item{std_error}{Standard errors}
+#'   \item{marginal_density}{f(x) estimates}
+#'   \item{joint_density}{f_YX estimates}
+#'   \item{call}{The function call}
+#'   \item{bandwidth}{Bandwidth used}
+#'   \item{n}{Sample size}
+#'   \item{kernel}{Kernel type}
+#'   \item{data}{Original data (X, Y)}
+#'
+#'   Use \code{plot()}, \code{summary()}, \code{coef()}, \code{fitted()}, and \code{confint()} methods to work with the result.
 #' @export
 #' @examples
 #' \donttest{
-#' # Example 1: point estimation of conditional expectation of Y on X
-#' biasBound_condExpectation(
-#'  Y = sample_data$Y,
-#'  X = sample_data$X,
-#'  x = 1,
-#'  h = 0.09,
-#'  kernel.fun = "Schennach2004"
-#' )
+#' # Example 1: Point estimation at x = 1
+#' X <- rnorm(100)
+#' Y <- X^2 + rnorm(100)
+#' fit <- biasBound_condExpectation(Y = Y, X = X, x = 1, h = 0.09)
+#' print(fit)
+#' fitted(fit)
 #'
-#' # Example 2: conditional expectation with automatic bandwidth selection using cross-validation
-#' # biasBound_condExpectation(
-#' # Y = sample_data$Y,
-#' #  X = sample_data$X,
-#' #  h = NULL,
-#' #  h_method = "cv",
-#' #  xi_lb = 1,
-#' #  xi_ub = 12,
-#' #  kernel.fun = "Schennach2004"
-#' # )
-#'
-#' # Example 3: conditional expectation with automatic bandwidth selection using Silverman's rule
-#' # biasBound_condExpectation(
-#' # Y = sample_data$Y,
-#' #  X = sample_data$X,
-#' #  h = NULL,
-#' #  h_method = "silverman",
-#' #  methods_get_xi = "Schennach",
-#' #  if_plot_ft = TRUE,
-#' #  kernel.fun = "Schennach2004"
-#' # )
+#' # Example 2: Range estimation with plots
+#' fit2 <- biasBound_condExpectation(Y = Y, X = X, h = NULL, h_method = "cv")
+#' plot(fit2)              # Regression plot
+#' plot(fit2, type = "ft") # Fourier transform plot
+#' summary(fit2)
 #' }
 biasBound_condExpectation <- function(Y, X, x = NULL, h = NULL, h_method = "cv", alpha = 0.05, est_Ar = NULL, resol = 100,
-                                      xi_lb = NULL, xi_ub = NULL, methods_get_xi = "Schennach",
-                                      if_plot_ft = FALSE, ora_Ar = NULL, if_plot_conditional_mean = TRUE,
+                                      xi_lb = NULL, xi_ub = NULL, methods_get_xi = "snr",
+                                      noise_floor = "auto", envelope_use_Y = TRUE, integer_r = TRUE,
+                                      ora_Ar = NULL,
                                       kernel.fun = "Schennach2004", if_approx_kernel = TRUE, kernel.resol = 1000) {
+  # Capture the function call
+  call <- match.call()
+
   # regularization of Y and X data structure
   if (length(X) != length(Y)) {
     stop("X and Y must have the same length!")
@@ -271,6 +304,9 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = NULL, h_method = "cv",
     xi_lb = xi_lb,
     xi_ub = xi_ub,
     methods_get_xi = methods_get_xi,
+    noise_floor = noise_floor,
+    envelope_use_Y = envelope_use_Y,
+    integer_r = integer_r,
     kernel.fun = kernel.fun,
     if_approx_kernel = if_approx_kernel,
     kernel.resol = kernel.resol
@@ -280,61 +316,66 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = NULL, h_method = "cv",
   inf_k <- config$kernel_functions$kernel
   xi_interval <- config$xi_interval
   est_Ar <- config$est_Ar
+  est_Ar_1x <- config$est_Ar_1x
   b1x <- config$b1x
   est_B <- config$est_B
   byx <- config$byx
   h <- config$h  # Get the possibly auto-selected bandwidth
 
-  # Initialize return list with config values
-  return_list <- list(est_Ar = est_Ar, est_B = est_B, b1x = b1x, byx = byx, h = h)
-
-  # Plot the Fourier transformation
-  if (if_plot_ft) {
-    p <- plot_ft(X, xi_interval = xi_interval) + geom_abline(intercept = log(est_Ar[1]), slope = -est_Ar[2], color = "red")
-    return_list[["ft_plot"]] <- p
-  }
-
-  # If x is not specified, create a range and plot the estimation
+  # Compute estimates based on whether x is specified (point vs range estimation)
   if (is.null(x)) {
+    # Range estimation
     x_range <- seq(min(X), max(X), length.out = resol)
     f1x <- purrr::map(x_range, get_avg_f1x, X = X, h = h, inf_k = inf_k) %>% unlist()
     fyx <- purrr::map(x_range, get_avg_fyx, Y = Y, X = X, h = h, inf_k = inf_k) %>% unlist()
     sigma <- purrr::map(x_range, get_sigma, X = X, h = h, inf_k = inf_k) %>% unlist()
     sigma_yx <- purrr::map(x_range, get_sigma_yx, Y = Y, X = X, h = h, inf_k = inf_k) %>% unlist()
 
+    # Compute confidence intervals
     lb <- (fyx - byx) / pmax(f1x + sign(fyx - byx) * b1x, 0) - sigma_yx * qnorm(1 - alpha / 2)
     ub <- (fyx + byx) / pmax(f1x - sign(fyx + byx) * b1x, 0) + sigma_yx * qnorm(1 - alpha / 2)
 
     conditional_mean_yx <- fyx / f1x
 
-    # Plot the conditional mean estimation and its confidence interval
-    if (if_plot_conditional_mean) {
-      data <- data.frame(X = x_range, conditional_mean_yx = conditional_mean_yx, Y = Y, ub = ub, lb = lb)
+    # Create S3 object for range estimation
+    result <- new_bbnp_regression(
+      fitted_values = conditional_mean_yx,
+      x = x_range,
+      estimate = NULL,
+      conf_int = list(
+        lower = lb,
+        upper = ub,
+        conf_level = alpha
+      ),
+      bias_bound = list(
+        b1x = b1x,
+        byx = byx,
 
-      # Set y-axis limits
-      ylower <- min(Y, na.rm = TRUE)
-      yupper <- max(Y, na.rm = TRUE)
-      ylower <- ylower - 0.05 * (yupper - ylower)
-      yupper <- yupper + 0.05 * (yupper - ylower)
+        # Envelope parameters used for the joint object (Y;X)
+        est_A = est_Ar[1],
+        est_r = est_Ar[2],
 
-      # Plot the estimation
-      gg <- ggplot() +
-        # For the ribbon and line
-        geom_ribbon(data = data, aes(x = X, ymin = lb, ymax = ub), fill = "grey", alpha = 0.8) +
-        geom_line(data = data, aes(x = X, y = conditional_mean_yx), color = "blue") +
+        # Envelope parameters used for the marginal object (1;X) that underlies b1x
+        est_A_1x = est_Ar_1x[1],
+        est_r_1x = est_Ar_1x[2],
 
-        # For the scatter plot
-        geom_point(aes(x = X, y = Y), color = "black", alpha = 0.3) +
-        labs(title = "estimated E(Y|X = x) and CI", x = "X", y = "E(Y|X = x)") +
-        coord_cartesian(ylim = c(ylower, yupper))
+        est_B = est_B,
+        xi_interval = xi_interval
+      ),
+      std_error = sigma_yx,
+      marginal_density = f1x,
+      joint_density = fyx,
+      call = call,
+      bandwidth = h,
+      n = length(X),
+      kernel = kernel.fun,
+      data = list(X = X, Y = Y),
+      internals = list(
+        config = config,
+        kernel_functions = config$kernel_functions
+      )
+    )
 
-      return_list[["density_plot"]] <- gg
-      return_list[["conditional_mean_yx"]] <- conditional_mean_yx
-      return_list[["ub"]] <- ub
-      return_list[["lb"]] <- lb
-      return_list[["sigma"]] <- sigma
-      return_list[["sigma_yx"]] <- sigma_yx
-    }
   } else {
     # Point estimation for specific x value
     f1x <- get_avg_f1x(X, x, h, inf_k = inf_k)
@@ -343,15 +384,49 @@ biasBound_condExpectation <- function(Y, X, x = NULL, h = NULL, h_method = "cv",
     sigma_yx <- get_sigma_yx(Y = Y, X = X, x = x, h = h, inf_k = inf_k)
     conditional_mean_yx <- fyx / f1x
 
+    # Compute confidence interval
     lb <- (fyx - byx) / max(c(f1x + sign(fyx - byx) * b1x, 0)) - sigma_yx * qnorm(1 - alpha / 2)
     ub <- (fyx + byx) / max(c(f1x - sign(fyx + byx) * b1x, 0)) + sigma_yx * qnorm(1 - alpha / 2)
 
-    return_list <- c(return_list, list(
-      conditional_mean_yx = conditional_mean_yx,
-      f1x = f1x, fyx = fyx, sigma = sigma, sigma_yx = sigma_yx,
-      CI = c(lb = lb, ub = ub)
-    ))
+    # Create S3 object for point estimation
+    result <- new_bbnp_regression(
+      fitted_values = NULL,
+      x = x,
+      estimate = conditional_mean_yx,
+      conf_int = list(
+        lower = lb,
+        upper = ub,
+        conf_level = alpha
+      ),
+      bias_bound = list(
+        b1x = b1x,
+        byx = byx,
+
+        # Envelope parameters used for the joint object (Y;X)
+        est_A = est_Ar[1],
+        est_r = est_Ar[2],
+
+        # Envelope parameters used for the marginal object (1;X) that underlies b1x
+        est_A_1x = est_Ar_1x[1],
+        est_r_1x = est_Ar_1x[2],
+
+        est_B = est_B,
+        xi_interval = xi_interval
+      ),
+      std_error = sigma_yx,
+      marginal_density = f1x,
+      joint_density = fyx,
+      call = call,
+      bandwidth = h,
+      n = length(X),
+      kernel = kernel.fun,
+      data = list(X = X, Y = Y),
+      internals = list(
+        config = config,
+        kernel_functions = config$kernel_functions
+      )
+    )
   }
 
-  return(return_list)
+  return(result)
 }

@@ -12,3 +12,4 @@ get_est_vy(Y)
 \description{
 get the estimation of Vy
 }
+\keyword{internal}

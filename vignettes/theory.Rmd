@@ -1,0 +1,260 @@
+---
+title: "Theoretical Background"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Theoretical Background}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center",
+  out.width = "80%",
+  warning = FALSE,
+  message = FALSE
+)
+library(rbbnp)
+library(ggplot2)
+```
+
+This article provides the mathematical foundation for the bias-bound approach implemented in **rbbnp**, based on [Schennach (2020)](https://doi.org/10.1093/restud/rdz065).
+
+## The Bias-Variance Tradeoff
+
+### The Challenge
+
+In nonparametric estimation, we face a fundamental tradeoff:
+
+- **Large bandwidth**: Low variance but high bias
+- **Small bandwidth**: Low bias but high variance
+
+Traditional approaches either:
+
+1. **Undersmooth**: Use smaller bandwidths to reduce bias, but this inflates variance and produces inefficient confidence intervals
+2. **Ignore bias**: Use optimal MSE bandwidths but produce invalid confidence intervals
+
+### The Solution
+
+The bias-bound approach takes a different path: instead of eliminating or ignoring bias, we **bound** it. This allows us to:
+
+- Use optimal (MSE-minimizing) bandwidths
+- Construct valid confidence intervals that explicitly account for potential bias
+- Achieve better coverage without sacrificing efficiency
+
+## Mathematical Framework
+
+### Kernel Density Estimation
+
+For a sample $X_1, \ldots, X_n$ from density $f$, the kernel density estimator is:
+
+$$\hat{f}_h(x) = \frac{1}{nh} \sum_{i=1}^{n} K\left(\frac{x - X_i}{h}\right)$$
+
+where $K$ is the kernel function and $h$ is the bandwidth.
+
+### Decomposing the Error
+
+The estimation error decomposes as:
+
+$$\hat{f}_h(x) - f(x) = \underbrace{[\hat{f}_h(x) - E[\hat{f}_h(x)]]}_{\text{variance term}} + \underbrace{[E[\hat{f}_h(x)] - f(x)]}_{\text{bias term}}$$
+
+The variance term is random with known distribution. The bias term is deterministic but unknown.
+
+## Fourier Representation
+
+### Key Insight
+
+The bias-bound approach exploits the **Fourier representation** of the bias. For kernel estimators:
+
+$$E[\hat{f}_h(x)] - f(x) = \int_{-\infty}^{\infty} [K^{FT}(h\xi) - 1] f^{FT}(\xi) e^{i\xi x} d\xi$$
+
+where $K^{FT}$ and $f^{FT}$ are Fourier transforms.
+
+### Smoothness Detection
+
+The Fourier transform of a smooth function decays polynomially:
+
+$$|f^{FT}(\xi)| \leq A |\xi|^{-r}$$
+
+where:
+- $A$ is an amplitude constant
+- $r$ measures the smoothness (larger = smoother)
+
+The package **automatically detects** $(A, r)$ from the data by fitting the empirical Fourier transform.
+
+```{r fourier-demo}
+# Generate sample data
+X <- gen_sample_data(size = 500, dgp = "2_fold_uniform", seed = 42)
+
+# Estimate density
+fit <- biasBound_density(X, h = 0.08, kernel.fun = "Schennach2004")
+
+# View detected smoothness parameters
+coef(fit)
+```
+
+```{r ft-plot}
+# Visualize Fourier transform fit
+plot(fit, type = "ft")
+```
+
+The plot shows (the legend labels each line):
+- **Empirical |phi|**: the empirical Fourier transform magnitude
+- **Fitted envelope**: the fitted envelope $A|\xi|^{-r}$, drawn over the selected window
+- The **shaded band**: the frequency range used for fitting
+
+## Constructing Bias Bounds
+
+### The Bias Bound Formula
+
+Given the smoothness envelope, the maximum possible bias is:
+
+$$\bar{b}(x) = \int_{-\infty}^{\infty} |K^{FT}(h\xi) - 1| \cdot A |\xi|^{-r} d\xi$$
+
+This integral can be computed analytically for many kernel functions.
+
+### Interpretation
+
+The bias bound $\bar{b}$ represents the **worst-case bias** consistent with the detected smoothness. The true bias satisfies:
+
+$$|E[\hat{f}_h(x)] - f(x)| \leq \bar{b}(x)$$
+
+## Confidence Interval Construction
+
+### Standard CI (Ignoring Bias)
+
+Traditional confidence intervals:
+
+$$CI_{\text{naive}} = \hat{f}(x) \pm z_{\alpha/2} \hat{\sigma}(x)$$
+
+These have incorrect coverage when bias is non-negligible.
+
+### Bias-Bound CI
+
+The bias-bound approach constructs:
+
+$$CI_{\text{bias-bound}} = [\hat{f}(x) - \bar{b}(x) - z_{\alpha/2}\hat{\sigma}(x), \quad \hat{f}(x) + \bar{b}(x) + z_{\alpha/2}\hat{\sigma}(x)]$$
+
+This accounts for the worst-case bias in both directions.
+
+### Visualization
+
+```{r ci-visualization}
+# The plot shows both bands
+plot(fit)
+```
+
+In the plot (labeled in the legend):
+- **Bias bound**: the bias range $[\hat{f} - \bar{b}, \hat{f} + \bar{b}]$
+- **95% CI**: the full confidence interval including sampling uncertainty
+
+## Kernel Functions
+
+### Infinite-Order Kernels
+
+For the bias-bound approach, **infinite-order kernels** are recommended because they satisfy:
+
+$$K^{FT}(\xi) = 1 \text{ for } |\xi| \leq 1$$
+
+This means no bias from frequencies below $1/h$, simplifying the bias bound calculation.
+
+### Available Kernels
+
+| Kernel | Order | Fourier Transform |
+|--------|-------|-------------------|
+| Schennach2004 | $\infty$ | Smooth transition at $|\xi|=1$ |
+| sinc | $\infty$ | Sharp cutoff at $|\xi|=1$ |
+| normal | 2 | Gaussian decay |
+| epanechnikov | 2 | Finite support |
+
+```{r kernel-comparison, fig.width=6, fig.height=10.5, out.width="100%"}
+library(gridExtra)
+
+fit_sch <- biasBound_density(X, kernel.fun = "Schennach2004")
+fit_sinc <- biasBound_density(X, kernel.fun = "sinc")
+
+grid.arrange(
+  plot(fit_sch) + ggtitle("Schennach2004 (recommended)"),
+  plot(fit_sinc) + ggtitle("Sinc kernel"),
+  ncol = 1
+)
+```
+
+## Extension to Regression
+
+### Conditional Expectation
+
+For regression $E[Y|X=x]$, the same principles apply. The Nadaraya-Watson estimator:
+
+$$\hat{m}(x) = \frac{\sum_{i=1}^{n} K_h(x - X_i) Y_i}{\sum_{i=1}^{n} K_h(x - X_i)}$$
+
+has bias that can be bounded using the Fourier representation of the conditional expectation function.
+
+### Implementation
+
+```{r regression-theory}
+# Generate regression data
+Y <- sin(2 * pi * X) + rnorm(500, sd = 0.3)
+
+# Estimate with bias bounds
+fit_reg <- biasBound_condExpectation(Y, X, h = 0.1)
+
+# View smoothness parameters
+coef(fit_reg)
+```
+
+## Bandwidth Selection
+
+### Cross-Validation
+
+The package uses leave-one-out cross-validation to select the MSE-optimal bandwidth:
+
+$$h_{CV} = \arg\min_h \sum_{i=1}^{n} (\hat{f}_{-i,h}(X_i))^2 - 2\hat{f}_h(X_i)$$
+
+```{r bw-selection}
+h_cv <- select_bandwidth(X, method = "cv", kernel.fun = "Schennach2004")
+h_silv <- select_bandwidth(X, method = "silverman", kernel.fun = "normal")
+
+cat("CV bandwidth:", round(h_cv, 4), "\n")
+cat("Silverman bandwidth:", round(h_silv, 4))
+```
+
+### Optimal vs. Undersmoothing
+
+Unlike traditional methods, the bias-bound approach uses **optimal bandwidths** without sacrificing valid inference:
+
+```{r optimal-vs-under, fig.width=6, fig.height=10.5, out.width="100%"}
+result_opt <- biasBound_density(X, h = h_cv, kernel.fun = "Schennach2004")
+result_under <- biasBound_density(X, h = h_cv * 0.5, kernel.fun = "Schennach2004")
+
+grid.arrange(
+  plot(result_opt) + ggtitle(paste0("Optimal bandwidth (h = ", round(h_cv, 3), ")")),
+  plot(result_under) + ggtitle(paste0("Undersmoothed (h = ", round(h_cv/2, 3), ")")),
+  ncol = 1
+)
+```
+
+The optimal bandwidth produces narrower confidence intervals while maintaining valid coverage.
+
+## Summary
+
+The bias-bound approach provides:
+
+1. **Valid inference** with optimal bandwidths
+2. **Automatic smoothness detection** via Fourier analysis
+3. **Explicit bias accounting** in confidence intervals
+4. **Efficiency gains** over undersmoothing
+
+## References
+
+Schennach, S. M. (2020). A Bias Bound Approach to Non-parametric Inference. *The Review of Economic Studies*, 87(5), 2439-2472. [doi:10.1093/restud/rdz065](https://doi.org/10.1093/restud/rdz065)
+
+## See Also
+
+- [Get Started](rbbnp.html): Quick introduction
+- [Density Estimation](density-estimation.html): Detailed density guide
+- [Regression](regression.html): Conditional expectation estimation

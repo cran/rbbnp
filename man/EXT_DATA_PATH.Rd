@@ -10,3 +10,4 @@ The path to the package's external data folder (for non-standard R data files) a
 This variable provides the path to the \code{extdata} folder within the package,
 where non-standard R data files are stored.
 }
+\keyword{internal}

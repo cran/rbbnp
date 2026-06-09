@@ -21,3 +21,4 @@ A scalar representing the kernel density estimate at point x.
 \description{
 Computes the point estimate using the specified kernel function.
 }
+\keyword{internal}

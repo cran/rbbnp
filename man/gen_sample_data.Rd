@@ -27,3 +27,8 @@ are generated according to the specified \code{dgp}:
 \description{
 This function used for generate some sample data for experiment
 }
+\examples{
+# Generate 500 samples from 2-fold uniform distribution
+X <- gen_sample_data(500, "2_fold_uniform", seed = 123)
+
+}

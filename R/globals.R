@@ -15,7 +15,7 @@
 #' This variable provides the path to the `data` folder within the package.
 #' @name DATA_PATH
 #' @return The path to the package's internal data folder as a character string.
-#' @export
+#' @keywords internal
 NULL
 
 #' The Path to the External Data Folder for Non-R Data Files
@@ -24,5 +24,5 @@ NULL
 #' where non-standard R data files are stored.
 #' @name EXT_DATA_PATH
 #' @return The path to the package's external data folder (for non-standard R data files) as a character string.
-#' @export
+#' @keywords internal
 NULL

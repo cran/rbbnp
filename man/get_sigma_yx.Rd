@@ -24,3 +24,4 @@ Returns 0 if either fyx or conditional variance is negative.
 \description{
 Estimation of sigma_yx
 }
+\keyword{internal}

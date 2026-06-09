@@ -1,0 +1,230 @@
+---
+title: "Regression with rbbnp"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Regression with rbbnp}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center",
+  out.width = "80%",
+  warning = FALSE,
+  message = FALSE
+)
+library(rbbnp)
+library(ggplot2)
+library(gridExtra)
+```
+
+This article provides a comprehensive guide to conditional expectation (regression) estimation using `biasBound_condExpectation()`.
+
+## The biasBound_condExpectation() Function
+
+```{r eval=FALSE}
+biasBound_condExpectation(
+  Y,                    # Response variable
+  X,                    # Predictor variable
+  x = NULL,             # Evaluation points
+  h = NULL,             # Bandwidth
+  h_method = "cv",      # "cv" or "silverman"
+  alpha = 0.05,         # Confidence level
+  kernel.fun = "Schennach2004"
+)
+```
+
+## Basic Example
+
+```{r basic-regression}
+# Generate data: Y = f(X) + noise
+set.seed(42)
+X <- gen_sample_data(size = 800, dgp = "2_fold_uniform")
+Y <- 2 * X - X^2 + rnorm(800, sd = 0.3)
+
+# Estimate conditional expectation E[Y|X]
+fit <- biasBound_condExpectation(Y, X, h = 0.1, kernel.fun = "Schennach2004")
+
+# View results
+fit
+```
+
+## Understanding the Output
+
+```{r output-details}
+# Key parameters
+coef(fit)
+
+# Detailed summary
+summary(fit)
+```
+
+## Visualizing Results
+
+```{r regression-plot}
+plot(fit)
+```
+
+**Plot elements:**
+
+| Element | Description |
+|---------|-------------|
+| Estimate (line) | Estimated $\hat{E}[Y \mid X=x]$ |
+| 95% CI (band) | Confidence interval |
+| Points | Original data $(X_i, Y_i)$ |
+
+### Adding True Function
+
+```{r with-true-function}
+# True function for comparison
+true_fn <- function(x) 2 * x - x^2
+
+plot(fit) +
+  stat_function(fun = true_fn, aes(color = "True E[Y|X]"),
+                linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c("Estimate" = "#08306B", "True E[Y|X]" = "red")) +
+  labs(color = NULL) +
+  theme(legend.position = "top")
+```
+
+## Extracting Fitted Values
+
+```{r fitted-values}
+# Get fitted values at evaluation points
+predictions <- fitted(fit)
+head(predictions, 10)
+
+# Evaluation points
+x_points <- fit$x
+head(x_points)
+```
+
+## Confidence Intervals
+
+In regions where the estimated marginal density $\hat f(x)$ is very close to zero,
+the confidence interval may become **unbounded** (i.e., contain `-Inf` or `Inf`).
+This behavior is expected because the conditional mean estimator is formed as a ratio involving
+$1/\hat f(x)$.
+
+```{r conf-intervals}
+# Extract confidence intervals
+ci <- confint(fit)
+
+# Show the interval at interior points, where the marginal density is well away
+# from zero so the ratio-based interval is finite
+ok <- which(is.finite(ci[, "lower"]) & is.finite(ci[, "upper"]))
+data.frame(
+  x = fit$x[ok],
+  estimate = fitted(fit)[ok],
+  lower = ci[ok, "lower"],
+  upper = ci[ok, "upper"]
+)[1:6, ]
+```
+
+## Bandwidth Selection
+
+### Cross-Validation
+
+```{r bw-cv}
+fit_cv <- biasBound_condExpectation(Y, X, h = NULL, h_method = "cv")
+cat("CV bandwidth:", coef(fit_cv)["h"])
+```
+
+### Silverman's Rule
+
+```{r bw-silv}
+fit_silv <- biasBound_condExpectation(Y, X, h = NULL, h_method = "silverman")
+cat("Silverman bandwidth:", coef(fit_silv)["h"])
+```
+
+## Real Data Example
+
+Let's use the built-in sample data:
+
+```{r real-data}
+# Load sample data
+data(sample_data)
+head(sample_data)
+
+# Estimate regression
+fit_real <- biasBound_condExpectation(
+  Y = sample_data$Y,
+  X = sample_data$X,
+  h = 0.1,
+  kernel.fun = "Schennach2004"
+)
+
+# Visualize
+plot(fit_real) + ggtitle("Regression on Sample Data")
+```
+
+## Comparing Kernel Functions
+
+```{r kernel-comparison, fig.width=6, fig.height=10.5, out.width="100%"}
+fit_sch <- biasBound_condExpectation(Y, X, h = 0.1, kernel.fun = "Schennach2004")
+fit_norm <- biasBound_condExpectation(Y, X, h = 0.1, kernel.fun = "normal")
+
+grid.arrange(
+  plot(fit_sch) + ggtitle("Schennach2004 Kernel"),
+  plot(fit_norm) + ggtitle("Normal Kernel"),
+  ncol = 1
+)
+```
+
+## Heteroscedastic Data
+
+The method handles heteroscedastic errors:
+
+```{r heteroscedastic}
+# Generate heteroscedastic data
+set.seed(123)
+X_het <- gen_sample_data(size = 600, dgp = "2_fold_uniform")
+Y_het <- X_het^2 + rnorm(600) * X_het  # Variance increases with X
+
+fit_het <- biasBound_condExpectation(Y_het, X_het, h = 0.1)
+plot(fit_het) + ggtitle("Heteroscedastic Data")
+```
+
+## Polynomial Regression Example
+
+```{r polynomial}
+# Quadratic relationship
+set.seed(456)
+X_poly <- gen_sample_data(size = 500, dgp = "2_fold_uniform")
+Y_poly <- -X_poly^2 + 3*X_poly + rnorm(500, sd = 0.5)
+
+fit_poly <- biasBound_condExpectation(Y_poly, X_poly, h = 0.1)
+
+# Compare with true function
+true_poly <- function(x) -x^2 + 3*x
+
+plot(fit_poly) +
+  stat_function(fun = true_poly, aes(color = "True: -x^2 + 3x"),
+                linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c("Estimate" = "#08306B", "True: -x^2 + 3x" = "red")) +
+  labs(color = NULL) +
+  theme(legend.position = "top")
+```
+
+## S3 Methods Summary
+
+```{r methods-summary, eval=FALSE}
+# All available methods for bbnp_regression objects
+print(fit)       # Concise summary
+summary(fit)     # Detailed statistics
+plot(fit)        # Visualization
+coef(fit)        # Parameters (A, r, B, h)
+confint(fit)     # Confidence intervals
+fitted(fit)      # Fitted values
+```
+
+## See Also
+
+- [Get Started](rbbnp.html): Quick introduction
+- [Density Estimation](density-estimation.html): Density estimation details
+- [Theory](theory.html): Mathematical background

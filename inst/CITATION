@@ -1,8 +1,11 @@
+if (!exists("meta") || is.null(meta)) meta <- packageDescription("rbbnp")
+
 bibentry(
   bibtype  = "Manual",
   title    = "rbbnp: A Bias Bound Approach to Non-Parametric Inference",
-  author   = person(given = "Xinyu", family = "Dai"),
-  year = "2025",
-  note = "R package version 0.2.0",
-  url = "https://CRAN.R-project.org/package=rbbnp"
+  author   = c(person(given = "Xinyu", family = "Dai"),
+               person(given = "Susanne M.", family = "Schennach")),
+  year     = "2026",
+  note     = paste("R package version", meta$Version),
+  url      = "https://CRAN.R-project.org/package=rbbnp"
 )

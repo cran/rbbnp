@@ -20,3 +20,4 @@ Returns the log sample estimation of expected Fourier transform at frequency \co
 \description{
 Compute log sample average of fourier transform and get mod
 }
+\keyword{internal}

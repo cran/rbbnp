@@ -15,3 +15,4 @@ Returns the value of the Fourier transform of the Normal kernel at the given fre
 \description{
 Fourier Transform of Normal Kernel
 }
+\keyword{internal}

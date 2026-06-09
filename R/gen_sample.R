@@ -14,6 +14,12 @@
 #'   \item{poly}{Values from a polynomial cumulative distribution function on \code{[0,1]}.}
 #'   \item{2_fold_uniform}{Sum of two uniformly distributed random numbers.}
 #' }
+#'
+#' @examples
+#' # Generate 500 samples from 2-fold uniform distribution
+#' X <- gen_sample_data(500, "2_fold_uniform", seed = 123)
+#'
+#' @export
 gen_sample_data <- function(size, dgp, seed = NULL) {
   if (!is.null(seed)) {
     set.seed(seed)
@@ -51,6 +57,7 @@ gen_sample_data <- function(size, dgp, seed = NULL) {
 #' @return A vector of `n` samples from the specified polynomial distribution.
 #'
 #' CDF: f(x) = (x-1)^k + 1
+#' @keywords internal
 rpoly01 <- function(n, k = 5) {
   # Inverse CDF function
   inv_poly_cdf <- function(p) {
@@ -67,9 +74,10 @@ rpoly01 <- function(n, k = 5) {
 #'
 #' @return The value of the true density of the 2-fold uniform distribution at each point in `x`.
 #'
+#' @keywords internal
 true_density_2fold <- function(x) {
-  convolution_density <- -abs(x - 1) + 1
-  return(convolution_density)
+  # Convolution of two U[0,1] variables: triangular density on [0, 2]
+  ifelse(x >= 0 & x <= 2, -abs(x - 1) + 1, 0)
 }
 
 #' Sample Data

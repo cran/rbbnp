@@ -20,3 +20,4 @@ order kernel at the given frequency/frequencies.
 \description{
 Define the Fourier transform of a infinite kernel proposed in Schennach 2004
 }
+\keyword{internal}

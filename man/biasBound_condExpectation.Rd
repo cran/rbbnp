@@ -15,10 +15,11 @@ biasBound_condExpectation(
   resol = 100,
   xi_lb = NULL,
   xi_ub = NULL,
-  methods_get_xi = "Schennach",
-  if_plot_ft = FALSE,
+  methods_get_xi = "snr",
+  noise_floor = "auto",
+  envelope_use_Y = TRUE,
+  integer_r = TRUE,
   ora_Ar = NULL,
-  if_plot_conditional_mean = TRUE,
   kernel.fun = "Schennach2004",
   if_approx_kernel = TRUE,
   kernel.resol = 1000
@@ -45,13 +46,15 @@ biasBound_condExpectation(
 
 \item{xi_ub}{Optional. Upper bound for the interval of Fourier Transform frequency xi. Similar to xi_lb, it defines the upper range for A and r estimation. If NULL, the upper bound is determined based on the methods_get_xi.}
 
-\item{methods_get_xi}{A string specifying the method to automatically determine the xi interval if xi_lb and xi_ub are NULL. Options are "Schennach" and "Schennach_loose". If "Schennach" the range is selected based on the Theorem 2 in Schennach2020, if "Schennach_loose", it is defined by the initial interval given in Theorem 2 without selecting the xi_n.}
+\item{methods_get_xi}{A string selecting the frequency-window rule used when xi_lb/xi_ub are NULL: "snr" (default; a signal-to-noise cutoff that selects a valid window at realistic sample sizes), "Schennach" (the data-driven rule of Schennach 2020, Theorem 2), or "Schennach_loose" (the initial, un-refined interval).}
 
-\item{if_plot_ft}{Logical. If TRUE, plots the Fourier transform.}
+\item{noise_floor}{Noise-floor form for the Schennach test: "auto" (default), "compact", or "general".}
 
-\item{ora_Ar}{Optional list of oracle values for A and r.}
+\item{envelope_use_Y}{If TRUE (default), fit the regression envelope to the cross-spectrum \verb{|phi_YX|}; if FALSE, fit it to the marginal spectrum \verb{|phi_X|}.}
 
-\item{if_plot_conditional_mean}{Logical. If TRUE, plots the conditional mean estimation.}
+\item{integer_r}{If TRUE (default), clamp the fitted envelope slope up to r = 2 when it falls below the minimum smoothness assumed by Schennach (2020, Definition 2), i.e. r < 2, and refit A; this keeps the bias-bound integral finite. Slopes >= 2 are left unchanged.}
+
+\item{ora_Ar}{Optional list of oracle values for A and r (for research/comparison purposes).}
 
 \item{kernel.fun}{A string specifying the kernel function to be used. Options are "Schennach2004", "sinc", "normal", "epanechnikov".}
 
@@ -60,7 +63,25 @@ biasBound_condExpectation(
 \item{kernel.resol}{The resolution for kernel function approximation. See \code{\link{fun_approx}}.}
 }
 \value{
-A list containing various outputs including estimated values, plots, and intervals.
+An object of class \code{bbnp_regression} with components:
+\item{fitted_values}{\eqn{E[Y|X=x]} estimates (for range estimation)}
+\item{x}{Evaluation points}
+\item{estimate}{Point estimate (for single x)}
+\item{conf_int}{List containing lower, upper bounds and conf_level. Note that
+the confidence interval can be unbounded (i.e., contain \code{-Inf} or \code{Inf})
+in regions where the estimated marginal density \eqn{\hat f(x)} is very close to zero,
+because the estimator is formed as a ratio involving \eqn{1/\hat f(x)}.}
+\item{bias_bound}{List containing b1x, byx, est_A, est_r, est_B, xi_interval}
+\item{std_error}{Standard errors}
+\item{marginal_density}{f(x) estimates}
+\item{joint_density}{f_YX estimates}
+\item{call}{The function call}
+\item{bandwidth}{Bandwidth used}
+\item{n}{Sample size}
+\item{kernel}{Kernel type}
+\item{data}{Original data (X, Y)}
+
+Use \code{plot()}, \code{summary()}, \code{coef()}, \code{fitted()}, and \code{confint()} methods to work with the result.
 }
 \description{
 Estimates the density at a given point or across a range, and provides visualization options for density,
@@ -68,35 +89,17 @@ bias, and confidence intervals.
 }
 \examples{
 \donttest{
-# Example 1: point estimation of conditional expectation of Y on X
-biasBound_condExpectation(
- Y = sample_data$Y,
- X = sample_data$X,
- x = 1,
- h = 0.09,
- kernel.fun = "Schennach2004"
-)
+# Example 1: Point estimation at x = 1
+X <- rnorm(100)
+Y <- X^2 + rnorm(100)
+fit <- biasBound_condExpectation(Y = Y, X = X, x = 1, h = 0.09)
+print(fit)
+fitted(fit)
 
-# Example 2: conditional expectation with automatic bandwidth selection using cross-validation
-# biasBound_condExpectation(
-# Y = sample_data$Y,
-#  X = sample_data$X,
-#  h = NULL,
-#  h_method = "cv",
-#  xi_lb = 1,
-#  xi_ub = 12,
-#  kernel.fun = "Schennach2004"
-# )
-
-# Example 3: conditional expectation with automatic bandwidth selection using Silverman's rule
-# biasBound_condExpectation(
-# Y = sample_data$Y,
-#  X = sample_data$X,
-#  h = NULL,
-#  h_method = "silverman",
-#  methods_get_xi = "Schennach",
-#  if_plot_ft = TRUE,
-#  kernel.fun = "Schennach2004"
-# )
+# Example 2: Range estimation with plots
+fit2 <- biasBound_condExpectation(Y = Y, X = X, h = NULL, h_method = "cv")
+plot(fit2)              # Regression plot
+plot(fit2, type = "ft") # Fourier transform plot
+summary(fit2)
 }
 }

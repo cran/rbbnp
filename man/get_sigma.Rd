@@ -21,3 +21,4 @@ A scalar representing the sigma estimate at point x. Returns 0 if the density es
 \description{
 Computes the sigma estimate for given parameters.
 }
+\keyword{internal}

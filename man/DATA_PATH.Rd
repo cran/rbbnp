@@ -9,3 +9,4 @@ The path to the package's internal data folder as a character string.
 \description{
 This variable provides the path to the \code{data} folder within the package.
 }
+\keyword{internal}

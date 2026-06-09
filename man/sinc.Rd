@@ -15,3 +15,4 @@ The value of the sinc function at each point in \code{u}.
 \description{
 Infinite Kernel Function
 }
+\keyword{internal}

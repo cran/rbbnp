@@ -23,3 +23,4 @@ Returns a scalar representing the estimated value of the regression function at 
 \description{
 Kernel Regression function
 }
+\keyword{internal}

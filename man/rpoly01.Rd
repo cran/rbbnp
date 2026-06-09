@@ -19,3 +19,4 @@ CDF: f(x) = (x-1)^k + 1
 \description{
 Generate n samples from the distribution
 }
+\keyword{internal}

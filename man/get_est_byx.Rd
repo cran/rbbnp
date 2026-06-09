@@ -19,3 +19,4 @@ A scalar representing the bias byx estimate.
 \description{
 Estimation of bias byx
 }
+\keyword{internal}

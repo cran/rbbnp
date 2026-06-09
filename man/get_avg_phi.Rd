@@ -20,3 +20,4 @@ Returns the sample estimation of expected Fourier transform at frequency \code{x
 \description{
 Compute Sample Average of Fourier Transform Magnitude
 }
+\keyword{internal}

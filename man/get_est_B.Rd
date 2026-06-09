@@ -15,3 +15,4 @@ The mean of the absolute values of the elements in Y, representing the estimated
 \description{
 get the estimation of B
 }
+\keyword{internal}

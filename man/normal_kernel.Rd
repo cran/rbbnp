@@ -15,3 +15,4 @@ Returns the value of the Normal kernel function at the given input.
 \description{
 Normal Kernel Function
 }
+\keyword{internal}

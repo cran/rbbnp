@@ -1,8 +1,66 @@
+#' rbbnp: Bias-Bounded Nonparametric Inference
+#'
+#' @description
+#' The rbbnp package provides functions for bias-bounded nonparametric density and
+#' conditional expectation estimation based on the methodology of Schennach (2020).
+#'
+#' @section Main Functions:
+#' The package provides two main estimation functions:
+#' \itemize{
+#'   \item \code{\link{biasBound_density}}: Bias-bounded density estimation
+#'   \item \code{\link{biasBound_condExpectation}}: Bias-bounded conditional expectation estimation
+#' }
+#'
+#' @section S3 Object System:
+#' Both main functions return S3 objects with the following classes:
+#' \itemize{
+#'   \item \code{bbnp_density}: Returned by \code{biasBound_density()}
+#'   \item \code{bbnp_regression}: Returned by \code{biasBound_condExpectation()}
+#' }
+#'
+#' @section S3 Methods:
+#' The following generic methods are available for working with estimation results:
+#' \describe{
+#'   \item{\code{print()}}{Concise summary of estimation results}
+#'   \item{\code{summary()}}{Detailed statistics and parameter estimates}
+#'   \item{\code{plot()}}{Visualization of results (density/regression plots, FT plots)}
+#'   \item{\code{coef()}}{Extract bias bound parameters (A, r, h) and B for regression}
+#'   \item{\code{fitted()}}{Extract fitted conditional expectation values (regression only)}
+#'   \item{\code{confint()}}{Extract confidence intervals}
+#' }
+#'
+#' @section Usage Example:
+#' \preformatted{
+#' # Density estimation workflow
+#' X <- rnorm(100)
+#' fit <- biasBound_density(X, h = 0.1)
+#' print(fit)
+#' summary(fit)
+#' plot(fit)              # Density plot
+#' plot(fit, type = "ft") # Fourier transform plot
+#' coef(fit)              # Bias bound parameters
+#' confint(fit)           # Confidence intervals
+#'
+#' # Regression estimation workflow
+#' Y <- X^2 + rnorm(100)
+#' fit_reg <- biasBound_condExpectation(Y, X, h = 0.1)
+#' plot(fit_reg)          # Regression plot
+#' fitted(fit_reg)        # Fitted values
+#' }
+#'
+#' @references
+#' Schennach, S. M. (2020). "Long Story Short: Omitted Variable Bias in Causal Machine Learning."
+#' \emph{NBER Working Paper}.
+#'
+#' @docType package
+#' @name rbbnp-package
+#' @aliases rbbnp
+#' @keywords internal
 #' @import tidyr
 #' @import dplyr
 #' @import ggplot2
-#' @importFrom stats approxfun qnorm runif var rchisq rnorm IQR dnorm sd
+#' @importFrom stats approxfun qnorm runif var rchisq rnorm IQR dnorm sd median fft density quantile
 #' @importFrom gridExtra grid.arrange
 #' @export create_kernel_functions
 #' @export create_biasBound_config
-NULL
+"_PACKAGE"

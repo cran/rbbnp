@@ -2,7 +2,7 @@
 % Please edit documentation in R/main.R
 \name{plot_ft}
 \alias{plot_ft}
-\title{Plot the Fourier Transform}
+\title{Plot the Fourier Transform (Deprecated)}
 \usage{
 plot_ft(X, xi_interval, ft_plot.resol = 500)
 }
@@ -18,15 +18,22 @@ used to represent the Fourier transform. Defaults to 500.}
 A ggplot object representing the plot of the Fourier transform.
 }
 \description{
-Plot the Fourier Transform of the
+\strong{Deprecated:} This function is deprecated and will be removed in a future version.
+
+Use \code{plot(fit, type = "ft")} instead, where
+\code{fit} is a \code{bbnp_density} or \code{bbnp_regression} object.
 }
 \details{
 C = 1, the parameter in \eqn{O(1/n^{0.25})}, see more details in in Schennach (2020).
 }
 \examples{
-plot_ft(
-  sample_data$X,
-  xi_interval = list(xi_lb = 1, xi_ub = 50),
-  ft_plot.resol = 1000
-)
+\dontrun{
+# Old (deprecated):
+# plot_ft(sample_data$X, xi_interval = list(xi_lb = 1, xi_ub = 50))
+
+# New (recommended):
+fit <- biasBound_density(sample_data$X, h = 0.1)
+plot(fit, type = "ft")
 }
+}
+\keyword{internal}

@@ -19,3 +19,4 @@ order kernel at the given time or space point(s).
 \description{
 Define the inverse Fourier transform function of W
 }
+\keyword{internal}

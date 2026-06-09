@@ -14,7 +14,10 @@ create_biasBound_config(
   resol = 100,
   xi_lb = NULL,
   xi_ub = NULL,
-  methods_get_xi = "Schennach",
+  methods_get_xi = "snr",
+  noise_floor = "auto",
+  envelope_use_Y = TRUE,
+  integer_r = TRUE,
   kernel.fun = "Schennach2004",
   if_approx_kernel = TRUE,
   kernel.resol = 1000
@@ -39,7 +42,18 @@ create_biasBound_config(
 
 \item{xi_ub}{Upper bound for the interval of Fourier Transform frequency.}
 
-\item{methods_get_xi}{Method to determine xi interval.}
+\item{methods_get_xi}{Method to determine the xi interval: "snr" (default), "Schennach",
+or "Schennach_loose".}
+
+\item{noise_floor}{Noise-floor form for the Schennach test: "auto" (default), "compact",
+or "general".}
+
+\item{envelope_use_Y}{If TRUE (default), fit the regression envelope to the cross-spectrum
+\verb{|phi_YX|}; if FALSE, fit it to the marginal spectrum \verb{|phi_X|}.}
+
+\item{integer_r}{If TRUE (default), when the fitted envelope slope falls below the minimum
+smoothness assumed by Schennach (2020, Definition 2), i.e. r < 2, clamp it up to r = 2 and
+refit A; this keeps the bias-bound integral finite. Slopes >= 2 are left unchanged.}
 
 \item{kernel.fun}{Kernel function to be used. Options include "normal", "epanechnikov", "Schennach2004", and "sinc".}
 

@@ -15,3 +15,4 @@ The value of the Fourier Transform of the sinc function at each point in \code{x
 \description{
 Define the closed form FT of the infinite order kernel sin(x)/(pi*x)
 }
+\keyword{internal}

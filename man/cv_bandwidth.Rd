@@ -22,14 +22,18 @@ automatically generated based on the range and distribution of the data.}
 
 \item{kernel_type}{A string identifying the kernel type, used only for reference bandwidth.}
 
-\item{grid_size}{Number of grid points for evaluation. Default is 512.}
+\item{grid_size}{Number of grid points for FFT-based evaluation (used when n >= 100).
+Default is 512. Larger values increase accuracy but reduce speed. Automatically
+rounded up to the next power of 2.}
 }
 \value{
 A scalar representing the optimal bandwidth that minimizes the cross-validation score.
 }
 \description{
 Implements least-squares cross-validation for bandwidth selection with any kernel function.
-Uses the self-convolution approach for accurate estimation of the integral term.
+Uses FFT-based algorithm for n >= 100 (fast, O(m log m) complexity) and exact computation
+for n < 100 (accurate). The FFT method bins data onto a regular grid and computes the
+LSCV objective via convolution in the frequency domain.
 }
 \examples{
 # Generate sample data

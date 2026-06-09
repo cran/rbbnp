@@ -23,3 +23,4 @@ A scalar representing the bias b1x estimate.
 \description{
 Computes the bias estimate for given parameters.
 }
+\keyword{internal}

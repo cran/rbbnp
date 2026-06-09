@@ -4,16 +4,25 @@
 \alias{get_xi_interval}
 \title{get xi interval}
 \usage{
-get_xi_interval(Y = 1, X, methods = "Schennach")
+get_xi_interval(
+  Y = 1,
+  X,
+  methods = "snr",
+  noise_floor = c("auto", "compact", "general")
+)
 }
 \arguments{
 \item{Y}{A numerical vector representing the sample data of variable Y.}
 
 \item{X}{A numerical vector representing the sample data of variable X.}
 
-\item{methods}{A character string indicating the method to use for calculating the
-xi interval. Supported methods are "Schennach" and "Schennach_loose".
-Defaults to "Schennach".}
+\item{methods}{A character string: "snr" (default; a signal-to-noise cutoff that selects a
+valid frequency window at realistic sample sizes), "Schennach" (the data-driven rule of
+Schennach 2020, Theorem 2), or "Schennach_loose" (the initial, un-refined interval).}
+
+\item{noise_floor}{Noise-floor form for the feasibility test: "auto" (default; general
+for non-constant Y, compact otherwise), "compact", or "general". See
+\code{.noise_floor_avg_dphi()}.}
 }
 \value{
 A list containing the lower (\code{xi_lb}) and upper (\code{xi_ub}) bounds of the xi interval.
@@ -26,4 +35,8 @@ The "Schennach" method computes the xi interval by performing a test based on th
 Schennach's theorem, adjusting the upper bound \code{xi_ub} if the test condition is met.
 The "Schennach_loose" method provides a looser calculation of the xi interval without
 performing the Schennach's test.
+The "snr" method selects the upper cutoff from the pointwise signal-to-noise ratio of the
+empirical Fourier transform (see \code{.snr_window()}); unlike "Schennach" it always selects a
+valid cutoff at realistic sample sizes and never returns an empty window.
 }
+\keyword{internal}

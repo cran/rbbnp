@@ -1,0 +1,116 @@
+---
+title: "Get Started with rbbnp"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Get Started with rbbnp}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center",
+  out.width = "80%",
+  warning = FALSE,
+  message = FALSE
+)
+library(rbbnp)
+library(ggplot2)
+```
+
+## Overview
+
+The **rbbnp** package implements a novel bias-bound approach to nonparametric inference developed by [Schennach (2020)](https://doi.org/10.1093/restud/rdz065). The key insight is that while we cannot consistently estimate pointwise bias, we can estimate an upper bound on bias magnitude, enabling valid confidence intervals with optimal bandwidths.
+
+### The Problem
+
+Traditional nonparametric inference faces a dilemma:
+
+- **Optimal bandwidths** minimize mean squared error but introduce non-negligible bias
+- **Undersmoothing** reduces bias but produces inefficient, wider confidence intervals
+
+### The Solution
+
+The bias-bound approach constructs confidence intervals that explicitly account for potential bias:
+
+$$CI = [\hat{f} - \bar{b} - z_{\alpha/2}\hat{\sigma}, \quad \hat{f} + \bar{b} + z_{\alpha/2}\hat{\sigma}]$$
+
+where $\bar{b}$ is the estimated bias bound.
+
+## Installation
+
+```{r eval=FALSE}
+# Install from CRAN
+install.packages("rbbnp")
+
+# Or install development version from GitHub
+# install.packages("devtools")
+devtools::install_github("xinyu-daidai/rbbnp-dev")
+```
+
+## Quick Start
+
+### Density Estimation
+
+```{r density-quick}
+# Generate sample data
+X <- gen_sample_data(size = 500, dgp = "2_fold_uniform", seed = 123456)
+
+# Estimate density with bias-aware confidence intervals
+fit <- biasBound_density(X, h = 0.1, kernel.fun = "Schennach2004")
+
+# View summary
+fit
+```
+
+```{r density-plot}
+# Visualize results
+plot(fit)
+```
+
+The plot shows (the legend labels each element):
+
+- **Estimate**: the estimated density $\hat{f}(x)$
+- **Bias bound**: the range where $E[\hat{f}]$ may lie
+- **95% CI**: the confidence interval
+
+### Conditional Expectation (Regression)
+
+```{r regression-quick}
+# Generate regression data: Y = -X^2 + 3X + noise
+Y <- -X^2 + 3*X + rnorm(500) * X
+
+# Estimate conditional expectation
+fit_reg <- biasBound_condExpectation(Y, X, h = 0.1, kernel.fun = "Schennach2004")
+
+# Visualize
+plot(fit_reg)
+```
+
+## Working with Results
+
+Both functions return S3 objects with standard methods:
+```{r methods-demo}
+# Extract parameters
+coef(fit)
+
+# Get confidence intervals
+head(confint(fit))
+
+# For regression: get fitted values
+head(fitted(fit_reg))
+```
+
+## Next Steps
+
+- **[Density Estimation](density-estimation.html)**: Detailed guide to density estimation
+- **[Regression](regression.html)**: Conditional expectation estimation
+- **[Theory](theory.html)**: Mathematical background
+
+## References
+
+Schennach, S. M. (2020). A Bias Bound Approach to Non-parametric Inference. *The Review of Economic Studies*, 87(5), 2439-2472. [doi:10.1093/restud/rdz065](https://doi.org/10.1093/restud/rdz065)
